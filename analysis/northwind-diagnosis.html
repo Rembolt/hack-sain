@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Northwind Utilities — Root-Cause Diagnosis</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10.9.1/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --bg: #ffffff; --fg: #1a1a1a; --fg2: #555; --fg3: #888; --line: #e4e4e7; --fill: #f5f5f7;
+    --accent: #2e79b5; --danger: #c04848; --warn: #d9892b; --ok: #1f8a65;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg); font: 14px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 32px 24px 64px; }
+  h1 { font-size: 24px; line-height: 1.25; margin: 4px 0 8px; }
+  h2 { font-size: 18px; margin: 0 0 8px; }
+  h3 { font-size: 14px; margin: 0 0 6px; font-weight: 600; }
+  p { margin: 0 0 8px; }
+  .eyebrow, .cap { color: var(--fg3); font-size: 12px; }
+  .lead { color: var(--fg2); max-width: 920px; }
+  section { padding: 24px 0; border-top: 1px solid var(--line); }
+  .grid { display: grid; gap: 20px; }
+  .g2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .g3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .g6 { grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; }
+  .g32 { grid-template-columns: 3fr 2fr; }
+  .g12 { grid-template-columns: 1fr 2fr; }
+  @media (max-width: 860px) { .g2, .g3, .g6, .g32, .g12 { grid-template-columns: 1fr; } }
+  .stat .v { font-size: 22px; font-weight: 600; }
+  .stat .l { font-size: 12px; color: var(--fg3); }
+  .danger { color: var(--danger); } .warn { color: var(--warn); }
+  .chart { position: relative; height: 240px; }
+  .chart.tall { height: 400px; }
+  .chart.pie { height: 300px; }
+  .callout { background: var(--fill); border-radius: 6px; padding: 12px 14px; font-size: 13px; color: var(--fg2); }
+  .callout b { display: block; color: var(--fg); margin-bottom: 4px; }
+  .callout.warnbox { border-left: 3px solid var(--warn); }
+  .callout.infobox { border-left: 3px solid var(--accent); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  th, td { text-align: left; padding: 6px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--fg3); font-weight: 500; }
+  td.r, th.r { text-align: right; }
+  tr.bad td:first-child::before { content: "● "; color: var(--danger); }
+  tr.meh td:first-child::before { content: "● "; color: var(--warn); }
+  .card { border: 1px solid var(--line); border-radius: 6px; }
+  .card .hd { padding: 6px 12px; border-bottom: 1px solid var(--line); font-size: 12px; font-weight: 600; display: flex; justify-content: space-between; }
+  .card .hd span { color: var(--fg3); font-weight: 400; }
+  .card .bd { padding: 12px; font-size: 13px; color: var(--fg2); }
+  .small { font-size: 13px; color: var(--fg2); }
+  .mermaid { text-align: center; }
+  footer { color: var(--fg3); font-size: 12px; padding-top: 16px; border-top: 1px solid var(--line); }
+</style>
+</head>
+<body>
+<main>
+  <div class="eyebrow">CGI consulting team · Northwind Utilities · Root-cause diagnosis (no solutions yet)</div>
+  <h1>Northwind has a billing-data problem that shows up as a complaints problem</h1>
+  <p class="lead">63% of complaints are about bills and meter reads. Most of that volume comes from estimated reads, which are concentrated in the two regions still on the 1998 billing stack. Estimated reads have also stayed flat in the regions where smart meters were rolled out. Cases then take longer to resolve because hand-offs between systems strip out the case history. An AI tool for triage and responses works on the queue, not on what fills it.</p>
+
+  <div class="grid g6" style="margin: 20px 0 24px">
+    <div class="stat"><div class="v danger">1,599</div><div class="l">Open complaints (Sep 26)</div></div>
+    <div class="stat"><div class="v danger">38.2 d</div><div class="l">Avg days to close (was 9.1)</div></div>
+    <div class="stat"><div class="v danger">76.8%</div><div class="l">Complaints breaching SLA</div></div>
+    <div class="stat"><div class="v warn">2.58</div><div class="l">Regulator score (was 4.30)</div></div>
+    <div class="stat"><div class="v warn">41.3%</div><div class="l">First-contact resolution (was 62%)</div></div>
+    <div class="stat"><div class="v">63%</div><div class="l">Complaints that are billing / metering</div></div>
+  </div>
+
+  <section>
+    <h2>How the causes connect</h2>
+    <p class="small">Connecting the meter-read file with the complaints file and the systems notes. Blue boxes are root causes; red boxes are the symptoms the board and regulator can see.</p>
+    <pre class="mermaid">
+flowchart TD
+  legacy["<b>ROOT CAUSE</b><br/>1998 billing stack, no smart meters<br/><small>Barrowdale + Dunmoor on Aurora + MeterHub</small>"]
+  smart["<b>ROOT CAUSE</b><br/>Smart reads not reaching bills<br/><small>Coverage 30% → 81%, est. reads flat ~21%</small>"]
+  algo["<b>ROOT CAUSE</b><br/>Estimation logic frozen since 2012<br/><small>No feedback loop from corrected bills</small>"]
+  handoff["<b>ROOT CAUSE</b><br/>Hand-offs lose case history<br/><small>35% of cases transferred; 0% from CaseTrack</small>"]
+  screens["<b>ROOT CAUSE</b><br/>4 screens, no bill breakdown<br/><small>Agents and AI can't see the bill</small>"]
+  est["Estimated reads<br/><small>61% legacy regions vs 21% elsewhere</small>"]
+  exc["Billing exceptions<br/><small>4.1% of estimated accounts, every month</small>"]
+  bill["<b>SYMPTOM</b><br/>Billing and metering complaints<br/><small>63% of all complaint volume</small>"]
+  slow["Slow, repeated resolution<br/><small>38 vs 23 days; reopen 27% vs 8%</small>"]
+  fcr["First-contact resolution falls<br/><small>62% → 41%; calls +34%</small>"]
+  backlog["<b>SYMPTOM</b><br/>Backlog and SLA breach<br/><small>1,599 open; 77% breach</small>"]
+  reg["<b>SYMPTOM</b><br/>Regulator score 4.3 → 2.6<br/><small>Penalty exposure $2.4M / quarter</small>"]
+  legacy --> est
+  smart --> est
+  algo --> est
+  est --> exc --> bill
+  bill --> backlog
+  bill --> fcr
+  handoff --> slow
+  slow --> backlog
+  slow --> fcr
+  screens --> fcr
+  fcr --> reg
+  backlog --> reg
+  classDef cause fill:#eaf2fa,stroke:#2e79b5,color:#1a1a1a
+  classDef mech fill:#ffffff,stroke:#bbb,color:#1a1a1a
+  classDef sym fill:#fbecec,stroke:#c04848,color:#1a1a1a
+  class legacy,smart,algo,handoff,screens cause
+  class est,exc,slow,fcr mech
+  class bill,backlog,reg sym
+    </pre>
+    <p class="cap">Sources: all six Northwind CSVs, Oct 2024 – Sep 2026. Every figure in a box is derived in the sections below.</p>
+  </section>
+
+  <section>
+    <h2>Symptoms: a steady, linear decline</h2>
+    <div class="grid g2">
+      <div><h3>Regulator satisfaction score (out of 5)</h3><div class="chart"><canvas id="cScore"></canvas></div><p class="cap">Source: northwind_monthly_kpis.csv · dashed line = board target 4.0</p></div>
+      <div><h3>First-contact resolution rate (%)</h3><div class="chart"><canvas id="cFcr"></canvas></div><p class="cap">Source: northwind_monthly_kpis.csv · dashed line = FCR implied by a score of 4.0 (58.4%)</p></div>
+      <div><h3>Complaints opened vs closed per month</h3><div class="chart"><canvas id="cFlow"></canvas></div><p class="cap">Source: northwind_monthly_kpis.csv</p></div>
+      <div><h3>Cumulative open backlog (complaints)</h3><div class="chart"><canvas id="cBacklog"></canvas></div><p class="cap">Derived: running sum of (opened − closed) · reconciles exactly to 1,599 open cases in the complaints file</p></div>
+      <div><h3>Inbound calls per month</h3><div class="chart"><canvas id="cCalls"></canvas></div><p class="cap">Source: northwind_monthly_kpis.csv</p></div>
+      <div><h3>SLA breach rate by month opened (%)</h3><div class="chart"><canvas id="cBreach"></canvas></div><p class="cap">Source: northwind_complaints.csv</p></div>
+    </div>
+    <div class="grid g3" style="margin-top: 16px">
+      <div class="callout"><b>The regulator score tracks FCR exactly</b>Score = 8.33 × FCR − 0.86 (r = 1.00). Getting back to 4.0 requires first-contact resolution of 58.4%, the level Northwind last had in Feb 2025. That is 17 points above today's rate.</div>
+      <div class="callout"><b>The backlog is small, but it keeps growing</b>On average, intake has exceeded closures by 67 complaints per month for two years. Closures grew 35% but intake grew 38%. Waiting time rises because the queue gets longer, not because each case takes more work.</div>
+      <div class="callout"><b>Calls rose 34%; unresolved calls doubled</b>Calls not resolved first time went from 16.2k to 33.5k per month. Much of the extra call volume is failure demand: customers calling back about the same problem.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>What the complaints are actually about</h2>
+    <div class="grid g2">
+      <div><h3>Complaints by category (25,416 over 24 months)</h3><div class="chart pie"><canvas id="cCat"></canvas></div><p class="cap">Source: northwind_complaints.csv · Oct 2024 – Sep 2026</p></div>
+      <div><h3>Complaints grouped by root-cause family</h3><div class="chart pie"><canvas id="cFamily"></canvas></div><p class="cap">Grouping by CGI team; counts from northwind_complaints.csv</p></div>
+    </div>
+    <p class="small" style="margin-top: 12px">The three billing and metering categories account for 63% of volume and 69% of today's open backlog (1,095 of 1,599 cases). The two billing categories are the slowest (31 days on average against 25 for everything else) and have the highest breach rates (81–83%). Between them, these three categories account for every bill correction, every refund and every meter visit.</p>
+  </section>
+
+  <section>
+    <h2>The hidden link: meter reads drive the billing complaints</h2>
+    <p class="small">The complaints file and the meter-read file only make sense together. Billing exceptions are exactly 4.1% of estimated-read accounts in every region, every month, so estimated reads mechanically produce billing exceptions. The regions still running Aurora Billing and MeterHub have three times the estimated-read rate of the other regions.</p>
+    <div class="grid g2">
+      <div><h3>Estimated-read rate by region (24-month average, %)</h3><div class="chart"><canvas id="cEst"></canvas></div><p class="cap">Source: northwind_meter_reads.csv · Barrowdale and Dunmoor = SYS-01/SYS-06, 0% smart meters</p></div>
+      <div><h3>Meter-driven complaints per 10k accounts per year</h3><div class="chart"><canvas id="cMeterC"></canvas></div><p class="cap">Complaints file joined to meter-read accounts · correlation with estimated-read rate across regions r = 0.88</p></div>
+      <div><h3>Share of billing exceptions by region (585k over 24 months)</h3><div class="chart pie"><canvas id="cExc"></canvas></div><p class="cap">Source: northwind_meter_reads.csv · Barrowdale + Dunmoor produce 54% of exceptions with 29% of accounts</p></div>
+      <div><h3>Smart-meter coverage vs estimated-read rate (%)</h3><div class="chart pie"><canvas id="cSmart"></canvas></div><p class="cap">Source: northwind_meter_reads.csv</p></div>
+    </div>
+    <div class="callout warnbox" style="margin-top: 16px"><b>Smart meters are being installed, but they are not changing the bills</b>In Ashford, Calderfield, Eastmarch and Fenwick, smart-meter coverage rose from 30% to 81%, yet the estimated-read rate stayed at about 21% (month-by-month correlation between −0.27 and +0.13). Either smart reads are not reaching the bill, since Helix CIS still takes nightly batch files, or MeterHub's 2012 estimation logic overrides them. SmartRead Gateway costs $2.6M a year to run and shows no measurable effect on estimated reads. Ask the COO to confirm which it is.</div>
+  </section>
+
+  <section>
+    <h2>Why resolution is slow: hand-offs, not triage</h2>
+    <div class="grid g32">
+      <div><h3>Average days to close, transferred vs not, by category</h3><div class="chart"><canvas id="cTransfer"></canvas></div><p class="cap">Source: northwind_complaints.csv · closed cases</p></div>
+      <div>
+        <table>
+          <tr><th>Metric</th><th class="r">Not transferred</th><th class="r">Transferred</th></tr>
+          <tr><td>Cases</td><td class="r">16,546</td><td class="r">8,870</td></tr>
+          <tr><td>Avg days to close</td><td class="r">23.0</td><td class="r">38.2</td></tr>
+          <tr class="bad"><td>SLA breach</td><td class="r">70.4%</td><td class="r">88.7%</td></tr>
+          <tr class="bad"><td>Reopened</td><td class="r">8.4%</td><td class="r">26.9%</td></tr>
+          <tr class="meh"><td>Unit cost</td><td class="r">$68</td><td class="r">$121</td></tr>
+        </table>
+        <p class="small" style="margin-top: 10px">The gap holds within every category, so it is not explained by case mix. Cases opened directly in CaseTrack (SYS-04) are never transferred. Cases entering through Aurora, Northwind Connect or the CallCentre CRM are transferred 46% of the time, and according to the systems file, "transferred cases lose their history".</p>
+      </div>
+    </div>
+    <div class="grid g2" style="margin-top: 16px">
+      <div><h3>SLA breach rate by priority, by quarter opened (%)</h3><div class="chart"><canvas id="cPrio"></canvas></div><p class="cap">Source: northwind_complaints.csv</p></div>
+      <div style="display: flex; flex-direction: column; justify-content: center; gap: 10px">
+        <div class="callout infobox"><b>Priority triage is not the bottleneck</b>P1, P2 and P3 cases breach at almost the same rate (89–95%) and have deteriorated in step. Cases are already sorted by priority; they breach because every queue is slow. Automating triage would re-sort cases that are already sorted.</div>
+        <p class="small">The transfer rate has stayed at about 35% for all 24 months, so hand-offs are a constant drag rather than the cause of the trend. The trend comes from intake exceeding capacity, combined with falling first-contact resolution.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Testing the brief: what an AI triage and response tool could reach</h2>
+    <div class="grid g12">
+      <div><h3>How closed complaints were resolved (23,817)</h3><div class="chart pie"><canvas id="cRes"></canvas></div><p class="cap">Source: northwind_complaints.csv · resolution_action</p></div>
+      <div>
+        <p class="small">Only 24.6% of closed complaints could have been resolved with information alone. That is the most an automated response tool could handle. The other 75% needed a physical or financial action: a corrected bill, a meter visit, a refund or a field repair. None of those can be done by answering the customer faster.</p>
+        <h3 style="margin-top: 12px">The 2025 AskNorthwind pilot got worse every month</h3>
+        <div class="grid g2">
+          <div><div class="chart" style="height: 210px"><canvas id="cPilot"></canvas></div><p class="cap">Source: northwind_ai_pilot_2025.csv · % of sessions</p></div>
+          <div><div class="chart" style="height: 210px"><canvas id="cCsat"></canvas></div><p class="cap">Source: northwind_ai_pilot_2025.csv · CSAT out of 5</p></div>
+        </div>
+        <table style="margin-top: 8px">
+          <tr><th>Pilot, Jan–Sep 2025</th><th class="r">Value</th></tr>
+          <tr><td>Sessions</td><td class="r">160,662</td></tr>
+          <tr><td>Fully contained</td><td class="r">20,843 (13%)</td></tr>
+          <tr><td>Escalated to a human agent</td><td class="r">128,573 (80%)</td></tr>
+          <tr><td>Cost per contained session</td><td class="r">$23.03 (vs $7.40 per agent call)</td></tr>
+          <tr><td>Inbound calls, Jan → Sep 2025</td><td class="r">42,840 → 47,136 (+10%)</td></tr>
+        </table>
+        <p class="small" style="margin-top: 8px">The pilot sat on top of the same data it could not see. Northwind Connect cannot show a bill breakdown, and account data arrives in nightly batches. So the assistant escalated four out of five sessions, repeat contact rose from 31% to 45%, and calls kept rising.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Where the money and reputation are leaking</h2>
+    <p class="small">Annual value at stake by cause, using northwind_unit_costs.csv and the systems file. Some rows overlap (cost to serve includes the others), so do not add them up. Each basis is shown so a finance director can challenge it.</p>
+    <div class="chart tall"><canvas id="cValue"></canvas></div>
+    <p class="cap">Derived from the Northwind data pack · $M per year · Oct 2024 – Sep 2026 run-rate</p>
+    <table id="tValue" style="margin-top: 12px"></table>
+    <div class="grid g2" style="margin-top: 16px">
+      <div class="card"><div class="hd">Estimated reads → billing exceptions <span>Biggest money</span></div><div class="bd">Estimated reads produce 585k billing exceptions over two years, which is 23 exceptions for every complaint. Each complaint costs $68–$121 to handle, but each exception that needs manual rework costs about $34, and there are far more of them. The two legacy regions generate 3× as many exceptions per account.</div></div>
+      <div class="card"><div class="hd">Regulator score and first-contact resolution <span>Biggest reputation</span></div><div class="bd">The score falls 0.075 points per month. At that rate it reaches 2.0 in about 8 months, and every quarter in enhanced monitoring costs $2.4M. The score moves one-for-one with first-contact resolution, which depends on agents being able to see and correct the bill on the first call.</div></div>
+    </div>
+  </section>
+
+  <section class="grid g2">
+    <div>
+      <h2>What the client's brief gets wrong</h2>
+      <table>
+        <tr><th>Client assumption</th><th>What the data shows</th></tr>
+        <tr class="meh"><td>Complaints need faster triage</td><td>All priorities breach at 89–95%; cases are already triaged correctly</td></tr>
+        <tr class="meh"><td>AI can automate the response</td><td>Only 24.6% of complaints can be resolved with information alone</td></tr>
+        <tr class="meh"><td>Clearing the backlog fixes it</td><td>Backlog is 1.3 months of intake; it refills while estimated reads persist</td></tr>
+        <tr class="meh"><td>The AI pilot needs a better model</td><td>The pilot had no access to bill data: 80% escalated, CSAT 2.0</td></tr>
+        <tr class="bad"><td>Smart meters are fixing reads</td><td>Estimated reads unchanged in smart regions despite 81% coverage</td></tr>
+      </table>
+    </div>
+    <div>
+      <h2>Caveats and questions for the COO</h2>
+      <p class="small">Complaint counts are almost identical across regions (~4,200 each) regardless of account numbers, so the regional differences only show up in the category mix. Treat per-account rates as indicative.</p>
+      <p class="small">The pilot's "complaint raised after session" rate implies about 20k complaints, more than the roughly 9k logged in the complaints file for Jan–Sep 2025. The definitions need confirming.</p>
+      <p class="small">Average days to close for Aug–Sep 2026 cohorts is understated because many of those cases are still open. KPI-file averages are used for trends instead.</p>
+      <p class="small">To ask: are smart reads loaded into Helix CIS for billing, or does MeterHub still estimate? What share of billing exceptions become a manual correction? Which quarters count as "in breach" for the $2.4M penalty?</p>
+    </div>
+  </section>
+
+  <footer>All figures computed from the six synthetic Northwind CSVs (Oct 2024 – Sep 2026). Analysis scripts: analysis/explore.py and analysis/deep.py. No outside data used. Charts: Chart.js; diagram: Mermaid (loaded from jsDelivr CDN).</footer>
+</main>
+
+<script>
+mermaid.initialize({ startOnLoad: true, theme: "base", flowchart: { htmlLabels: true, curve: "basis" }, themeVariables: { fontSize: "13px" } });
+
+const C = { red: "#c04848", blue: "#2e79b5", green: "#1f8a65", orange: "#d9892b", grey: "#8888a8",
+  pal: ["#c04848", "#e8a0a0", "#f0a040", "#2e79b5", "#70b0d8", "#5a6cc0", "#1f8a65", "#7dcab0", "#8888a8"] };
+Chart.defaults.font.family = '-apple-system, "Segoe UI", Roboto, sans-serif';
+Chart.defaults.font.size = 11;
+Chart.defaults.maintainAspectRatio = false;
+Chart.defaults.plugins.legend.labels.boxWidth = 12;
+
+const MONTHS = ["Oct 24","Nov 24","Dec 24","Jan 25","Feb 25","Mar 25","Apr 25","May 25","Jun 25","Jul 25","Aug 25","Sep 25","Oct 25","Nov 25","Dec 25","Jan 26","Feb 26","Mar 26","Apr 26","May 26","Jun 26","Jul 26","Aug 26","Sep 26"];
+const K = {
+  opened: [912,830,951,985,851,901,1023,1004,982,1222,1026,1020,1189,940,1120,1177,1002,1171,1190,1049,1164,1271,1185,1251],
+  closed: [476,760,873,927,840,901,952,942,965,1062,1089,1000,1029,1067,1019,1025,1000,1117,1109,1146,1063,1163,1130,1162],
+  backlog: [436,506,584,642,653,653,724,786,803,963,900,920,1080,953,1054,1206,1208,1262,1343,1246,1347,1455,1510,1599],
+  fcr: [62.0,61.1,60.2,59.3,58.4,57.5,56.6,55.7,54.8,53.9,53.0,52.1,51.2,50.3,49.4,48.5,47.6,46.7,45.8,44.9,44.0,43.1,42.2,41.3],
+  score: [4.3,4.22,4.15,4.08,4.0,3.92,3.85,3.77,3.7,3.62,3.55,3.47,3.4,3.32,3.25,3.17,3.1,3.02,2.95,2.88,2.8,2.72,2.65,2.58],
+  calls: [42571,43098,41856,42840,41820,42227,44644,43396,45387,50662,47010,47136,49033,48295,48825,50977,48137,51169,50476,52245,53421,53113,55014,57060],
+  breach: [44.0,49.9,51.1,55.0,58.5,61.2,60.9,65.1,67.1,72.3,76.6,76.8,80.3,82.8,83.8,85.8,88.9,88.8,91.2,92.2,92.7,93.9,94.6,94.2],
+};
+const EST = {
+  Ashford: [21.1,23.8,20.7,14.6,16.7,22.2,15.6,24.0,24.8,21.7,12.8,18.5,20.0,18.3,20.7,19.4,19.8,27.6,16.9,15.8,22.6,19.0,22.5,25.0],
+  Calderfield: [17.9,16.6,24.5,23.5,28.6,21.3,28.9,26.0,25.2,20.8,22.7,32.1,20.4,29.4,21.8,28.1,21.0,23.3,21.3,25.5,29.1,19.8,22.2,21.4],
+  Eastmarch: [20.9,15.7,21.8,16.0,20.2,14.4,19.7,16.0,16.5,18.4,15.7,20.8,12.3,19.4,9.6,19.1,16.3,20.6,12.5,14.6,18.3,16.2,15.1,18.0],
+  Fenwick: [25.5,29.2,28.9,25.1,22.7,26.1,27.7,23.4,24.4,21.9,26.3,28.6,26.4,30.0,25.1,26.4,25.6,23.3,27.8,22.1,29.8,27.4,23.5,26.2],
+  Barrowdale: [64.8,63.6,61.8,61.5,63.7,64.6,66.3,65.7,72.2,66.2,58.9,69.9,62.9,57.7,63.9,67.3,61.9,65.1,60.8,63.7,64.7,66.0,63.2,62.0],
+  Dunmoor: [55.8,62.3,60.2,58.0,56.7,63.4,56.1,61.1,59.3,58.8,55.1,56.1,63.9,55.6,55.2,62.9,53.3,62.6,58.7,59.9,59.4,60.0,53.4,61.5],
+};
+const avg = a => a.reduce((x, y) => x + y, 0) / a.length;
+const r1 = x => Math.round(x * 10) / 10;
+const SMART_PEN = MONTHS.map((_, i) => r1(30 + 2.2 * i));
+const SMART_EST = MONTHS.map((_, i) => r1(avg(["Ashford","Calderfield","Eastmarch","Fenwick"].map(r => EST[r][i]))));
+const LEGACY_EST = MONTHS.map((_, i) => r1(avg([EST.Barrowdale[i], EST.Dunmoor[i]])));
+const REGIONS = ["Ashford","Barrowdale","Calderfield","Dunmoor","Eastmarch","Fenwick"];
+const regionColors = REGIONS.map(r => (r === "Barrowdale" || r === "Dunmoor") ? C.red : C.blue);
+const flat = (v, n) => Array(n).fill(v);
+const dashed = (label, v, color, n = 24) => ({ label, data: flat(v, n), borderColor: color, borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, fill: false });
+const line = (label, data, color) => ({ label, data, borderColor: color, backgroundColor: color, borderWidth: 2, pointRadius: 2, tension: 0.2 });
+const axes = (yTitle, xTitle = "Month", extra = {}) => ({
+  x: { title: { display: true, text: xTitle } },
+  y: Object.assign({ title: { display: true, text: yTitle } }, extra),
+});
+const mk = (id, cfg) => new Chart(document.getElementById(id), cfg);
+
+mk("cScore", { type: "line", data: { labels: MONTHS, datasets: [line("Regulator score", K.score, C.red), dashed("Board target 4.0", 4.0, C.green)] },
+  options: { scales: axes("Score out of 5", "Month", { min: 2, max: 4.5 }) } });
+mk("cFcr", { type: "line", data: { labels: MONTHS, datasets: [line("First-contact resolution %", K.fcr, C.orange), dashed("FCR implied by score 4.0 (58.4%)", 58.4, C.green)] },
+  options: { scales: axes("% resolved first time", "Month", { min: 35, max: 65 }) } });
+mk("cFlow", { type: "line", data: { labels: MONTHS, datasets: [line("Opened", K.opened, C.red), line("Closed", K.closed, C.blue)] },
+  options: { scales: axes("Complaints") } });
+mk("cBacklog", { type: "bar", data: { labels: MONTHS, datasets: [{ label: "Open backlog", data: K.backlog, backgroundColor: C.red }] },
+  options: { plugins: { legend: { display: false } }, scales: axes("Open complaints", "Month", { beginAtZero: true }) } });
+mk("cCalls", { type: "line", data: { labels: MONTHS, datasets: [line("Inbound calls", K.calls, C.blue)] },
+  options: { plugins: { legend: { display: false } }, scales: axes("Calls per month") } });
+mk("cBreach", { type: "line", data: { labels: MONTHS, datasets: [line("SLA breach rate %", K.breach, C.red)] },
+  options: { plugins: { legend: { display: false } }, scales: axes("% breaching SLA", "Month opened", { min: 0, max: 100 }) } });
+
+const pieOpts = { plugins: { legend: { position: "right" }, tooltip: { callbacks: { label: ctx => {
+  const tot = ctx.dataset.data.reduce((a, b) => a + b, 0);
+  return ` ${ctx.label}: ${ctx.parsed.toLocaleString()} (${(ctx.parsed / tot * 100).toFixed(1)}%)`; } } } } };
+
+mk("cCat", { type: "doughnut", data: {
+  labels: ["Billing - disputed amount","Billing - estimated read","Metering - no read taken","Supply - interruption","Service - poor communication","Service - missed appointment","Payment - plan or arrears","Water - pressure or quality","Other"],
+  datasets: [{ data: [8060,4833,3120,2192,1908,1718,1601,1313,671], backgroundColor: C.pal }] }, options: pieOpts });
+mk("cFamily", { type: "doughnut", data: {
+  labels: ["Meter & billing data (63%)","Service process","Field & network","Payment plans & arrears","Other"],
+  datasets: [{ data: [16013,3626,3505,1601,671], backgroundColor: [C.red, C.blue, "#70b0d8", C.green, C.grey] }] }, options: pieOpts });
+
+mk("cEst", { type: "bar", data: { labels: REGIONS, datasets: [{ label: "Estimated-read rate %", data: [20.2,64.1,23.8,58.7,17.0,26.0], backgroundColor: regionColors }] },
+  options: { plugins: { legend: { display: false } }, scales: axes("% of reads estimated", "Region", { beginAtZero: true }) } });
+mk("cMeterC", { type: "bar", data: { labels: REGIONS, datasets: [{ label: "Estimated-read + no-read complaints per 10k accounts / yr", data: [12.7,31.5,15.2,40.7,17.9,25.3], backgroundColor: regionColors }] },
+  options: { plugins: { legend: { display: false } }, scales: axes("Complaints per 10k accounts / yr", "Region", { beginAtZero: true }) } });
+mk("cExc", { type: "pie", data: { labels: REGIONS, datasets: [{ data: [81799,187944,83154,127675,50866,53661],
+  backgroundColor: ["#70b0d8", C.red, "#2e79b5", "#e8a0a0", "#5a6cc0", "#9aaadc"] }] }, options: pieOpts });
+mk("cSmart", { type: "line", data: { labels: MONTHS, datasets: [
+  line("Smart-meter penetration (smart regions)", SMART_PEN, C.green),
+  line("Estimated-read rate (avg of 4 smart regions)", SMART_EST, C.red),
+  line("Estimated-read rate (Barrowdale + Dunmoor)", LEGACY_EST, C.grey) ] },
+  options: { scales: axes("% of accounts", "Month", { beginAtZero: true, max: 100 }) } });
+
+mk("cTransfer", { type: "bar", data: {
+  labels: ["Disputed amount","Estimated read","No read taken","Supply","Poor comms","Missed appt","Payment","Water","Other"],
+  datasets: [
+    { label: "Not transferred", data: [25.5,25.2,19.9,20.3,20.4,20.9,20.7,21.0,20.6], backgroundColor: C.blue },
+    { label: "Transferred between systems", data: [42.0,42.5,34.3,33.8,35.1,33.3,35.3,34.8,33.9], backgroundColor: C.red } ] },
+  options: { scales: axes("Avg days to close", "Complaint category", { beginAtZero: true }) } });
+mk("cPrio", { type: "line", data: { labels: ["Q4 24","Q1 25","Q2 25","Q3 25","Q4 25","Q1 26","Q2 26","Q3 26"], datasets: [
+  line("P1 (5-day SLA)", [48.6,51.8,56.1,69.1,75.4,81.3,90.3,89.1], C.red),
+  line("P2 (10-day SLA)", [46.6,58.1,64.6,73.6,80.8,86.8,92.0,93.2], C.orange),
+  line("P3 (20-day SLA)", [48.8,58.7,65.0,76.0,83.3,88.6,92.1,95.1], C.blue) ] },
+  options: { scales: axes("% breaching SLA", "Quarter opened", { min: 40, max: 100 }) } });
+
+mk("cRes", { type: "doughnut", data: {
+  labels: ["Information only / explained","Bill corrected & re-issued","Meter visit required","Field repair required","Refund or credit","Payment plan amended","Appointment rebooked","Apology & manual fix","Compensation paid"],
+  datasets: [{ data: [5865,6089,4055,2074,1785,1122,1087,976,764], backgroundColor: [C.green, C.red, "#e8a0a0", C.orange, "#f0c070", C.blue, "#70b0d8", "#5a6cc0", C.grey] }] },
+  options: { plugins: { legend: { position: "bottom" }, tooltip: pieOpts.plugins.tooltip } } });
+
+const PM = ["Jan 25","Feb 25","Mar 25","Apr 25","May 25","Jun 25","Jul 25","Aug 25","Sep 25"];
+mk("cPilot", { type: "line", data: { labels: PM, datasets: [
+  line("Escalated to agent", [77.0,77.7,78.4,79.1,79.8,80.5,81.2,81.9,82.6], C.red),
+  line("Repeat contact in 7 days", [31.0,32.7,34.4,36.1,37.8,39.5,41.2,42.9,44.6], C.orange),
+  line("Fully contained", [16.0,15.3,14.6,13.9,13.2,12.5,11.8,11.1,10.4], C.green),
+  line("Complaint raised after session", [11.0,11.4,11.8,12.2,12.6,13.0,13.4,13.8,14.2], C.grey) ] },
+  options: { scales: axes("% of sessions", "Month", { beginAtZero: true }) } });
+mk("cCsat", { type: "line", data: { labels: PM, datasets: [line("Assistant CSAT", [2.6,2.53,2.46,2.39,2.32,2.25,2.18,2.11,2.04], C.red)] },
+  options: { plugins: { legend: { display: false } }, scales: axes("CSAT out of 5", "Month", { min: 1.5, max: 3 }) } });
+
+const VP = [
+  ["Regulator enhanced-monitoring penalty", 9.6, "$2.4M per quarter in breach × 4 quarters", "Exposure, not yet incurred"],
+  ["Billing exceptions worked manually (all regions)", 9.9, "292.5k exceptions / yr × $34 manual correction", "Upper bound: assumes every exception is a manual correction"],
+  ["Cost-to-serve increase since Oct 2024", 9.3, "($23.92 − $18.73) × 1.8M accounts", "Umbrella figure, overlaps other rows"],
+  ["Legacy billing + metering stack run cost", 5.8, "Aurora $4.1M + MeterHub $1.7M, serving 29% of accounts", "From systems file"],
+  ["Excess exceptions in legacy regions only", 3.5, "103k / yr above smart-region rate × $34", "Same $34 assumption"],
+  ["SmartRead Gateway with no measurable read benefit", 2.6, "Run cost; est. read rate flat while coverage rose 51 pts", "From systems + meter files"],
+  ["Repeat calls from falling first-contact resolution", 1.5, "(33.5k − 16.2k) unresolved calls / mo × $7.40 × 12", "Assumes unresolved first calls generate one repeat call"],
+  ["Complaint handling (all complaints)", 1.1, "16.5k × $68 + 8.9k × $121, over 2 years ÷ 2", "From unit costs"],
+  ["Bill-correction value returned to customers", 0.67, "$1.35M in corrections over 2 years ÷ 2", "From complaints file"],
+  ["AskNorthwind pilot contract", 0.64, "Vendor contract; $23 per contained session vs $7.40 per call", "From unit costs"],
+  ["Transfer premium on complaints", 0.24, "8,870 transferred × ($121 − $68), ÷ 2 years", "From unit costs"],
+];
+mk("cValue", { type: "bar", data: { labels: VP.map(v => v[0]), datasets: [{ label: "Annual value at stake ($M)", data: VP.map(v => v[1]), backgroundColor: C.red }] },
+  options: { indexAxis: "y", plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` $${ctx.parsed.x}M per year` } } },
+    scales: { x: { title: { display: true, text: "$M per year" }, beginAtZero: true }, y: { title: { display: false } } } } });
+document.getElementById("tValue").innerHTML =
+  "<tr><th>Value pool</th><th class='r'>$M / yr</th><th>Basis</th><th>Confidence / assumption</th></tr>" +
+  VP.map(v => `<tr><td>${v[0]}</td><td class="r">${v[1].toFixed(2)}</td><td>${v[2]}</td><td>${v[3]}</td></tr>`).join("");
+</script>
+</body>
+</html>

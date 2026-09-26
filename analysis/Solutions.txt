@@ -1,0 +1,9 @@
+Main solutions:
+-Bill Estimation reinforcement through corrected bills into parameter model(household income, location, occupations, past usage, etc.)
+-AI insights (possible causes) of Excell visualiser map of account complaints, complaint type, systems involved, etc.
+(price of possible solutions)
+
+Secondary solutions:
+AI chatbot for info problems??
+
+ 
