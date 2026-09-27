@@ -1,0 +1,102 @@
+[
+    {
+  "accountId": "ACC-100001",
+  "accountName": "John Smith",
+
+  "clientInfo": {
+    "customerName": "John Smith",
+    "email": "john.smith@email.com",
+    "phoneNumber": "+1-555-123-4567",
+
+    "serviceAddress": {
+      "houseNumber": "123",
+      "street": "Maple Avenue",
+      "city": "Toronto",
+      "province": "ON",
+      "postalCode": "M5V 2A1"
+    },
+
+    "accountStatus": "ACTIVE"
+  },
+
+  "resources": {
+    "billing": {},
+    "complaints": {}
+  },
+
+  "summary": {
+    "outstandingBalance": 158.69,
+    "totalBills": 12,
+    "unpaidBills": 1,
+    "totalComplaints": 2,
+    "openComplaints": 1
+  }
+},
+{
+  "accountId": "ACC-100002",
+  "accountName": "Sarah Johnson",
+
+  "clientInfo": {
+    "customerName": "Sarah Johnson",
+    "email": "sarah.johnson@email.com",
+    "phoneNumber": "+1-555-987-6543",
+
+    "serviceAddress": {
+      "houseNumber": "456",
+      "street": "Oak Street",
+      "city": "Mississauga",
+      "province": "ON",
+      "postalCode": "L5B 1M1"
+    },
+
+    "accountStatus": "ACTIVE"
+  },
+
+  "resources": {
+    "billing": {},
+    "complaints": {}
+  },
+
+  "summary": {
+    "outstandingBalance": 0.00,
+    "totalBills": 18,
+    "unpaidBills": 0,
+    "totalComplaints": 1,
+    "openComplaints": 0
+  }
+}
+,
+{
+  "accountId": "ACC-100003",
+  "accountName": "Michael Chen",
+
+  "clientInfo": {
+    "customerName": "Michael Chen",
+    "email": "michael.chen@email.com",
+    "phoneNumber": "+1-555-246-8135",
+
+    "serviceAddress": {
+      "houseNumber": "789",
+      "street": "Pine Crescent",
+      "city": "Brampton",
+      "province": "ON",
+      "postalCode": "L6T 4A5"
+    },
+
+    "accountStatus": "SUSPENDED"
+  },
+
+  "resources": {
+    "billing": {},
+    "complaints": {}
+  },
+
+  "summary": {
+    "outstandingBalance": 642.87,
+    "totalBills": 24,
+    "unpaidBills": 4,
+    "totalComplaints": 5,
+    "openComplaints": 2
+  }
+}
+]
