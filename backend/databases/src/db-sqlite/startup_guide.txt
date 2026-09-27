@@ -1,0 +1,46 @@
+
+Run Database Server
+
+    uvicorn main:app --reload 
+        in terminal
+
+Base URL
+
+http://localhost:8000
+
+Available Endpoints
+
+GET /complaints
+    Returns all complaints in the database.
+
+POST /complaints
+    Creates a new complaint.
+
+GET /accounts/{account_id}/complaints
+    Returns all complaints associated with a customer account.
+
+Swagger Documentation
+
+http://localhost:8000/docs
+
+Example
+
+GET http://localhost:8000/complaints
+
+Response:
+[
+  {
+    "complaint_id": "COMP-001",
+    "ticket_number": "TKT-001",
+    "account_id": "ACC-100001",
+    "reason": "High Water Bill"
+  }
+]
+
+Database
+
+SQLite database file:
+utility.db
+
+Table:
+complaints
