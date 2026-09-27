@@ -1,0 +1,9 @@
+Start Both DB's by
+    ./run-all.sh
+    (in terminal)
+
+Stop Both DB's by
+    ./stop-all.sh
+    (in terminal)
+
+can exit server by cntrl/cmd + c aswell
