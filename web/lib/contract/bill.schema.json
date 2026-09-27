@@ -1,0 +1,264 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.hack-sain.invalid/contract/bill.schema.json",
+  "title": "Bill",
+  "description": "One customer bill on the account file, matching web/app/data-templates/bill.Json and the Bill type in web/lib/account.ts. Blank template strings are placeholders and do not validate. The account contract includes this document, and POST /api/accounts checks each bill against it.",
+  "x-scope": "shared-contract",
+  "x-template": "web/app/data-templates/bill.Json",
+  "x-standards": [
+    "JSON Schema 2020-12",
+    "schema.org/Invoice",
+    "OASIS UBL 2.1 Invoice",
+    "ISO 4217",
+    "ISO 8601",
+    "UCUM m3 and kW.h",
+    "IEC 61968 MeterReading",
+    "NAESB ESPI / Green Button for the electricity quantity",
+    "Canadian GST/HST/PST/QST collapsed into a single tax amount"
+  ],
+  "x-frontend": {
+    "paidFilter": "status Paid is the paid segment. Every other status is the unpaid segment, because the bill list treats any status other than paid as unpaid.",
+    "badgeTone": {
+      "Paid": "teal",
+      "Unpaid": "red",
+      "Issued": "gray",
+      "Partial": "gray",
+      "Overdue": "gray",
+      "Void": "gray",
+      "Credited": "gray"
+    }
+  },
+  "x-invariants": [
+    "billingPeriod.endDate is on or after billingPeriod.startDate.",
+    "issuedDate is on or after billingPeriod.endDate.",
+    "dueDate is on or after issuedDate.",
+    "When paymentDate is a date, it is on or after issuedDate.",
+    "totalPrice equals waterCharge + electricityCharge + serviceFee + adjustments + tax, in the bill currency, rounded to cents."
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "billingId",
+    "billingPeriod",
+    "usage",
+    "priceBreakdown",
+    "totalPrice",
+    "currency",
+    "status",
+    "issuedDate",
+    "dueDate",
+    "paymentDate"
+  ],
+  "properties": {
+    "billingId": {
+      "$ref": "common.schema.json#/$defs/BillingId",
+      "x-mapsTo": ["ubl:Invoice/cbc:ID", "schema:Invoice.identifier"]
+    },
+    "billingPeriod": {
+      "title": "Billing period",
+      "description": "Inclusive service period the usage and charges cover. UBL cac:InvoicePeriod (cbc:StartDate, cbc:EndDate).",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["startDate", "endDate"],
+      "properties": {
+        "startDate": {
+          "$ref": "common.schema.json#/$defs/IsoDate",
+          "x-mapsTo": ["ubl:InvoicePeriod/cbc:StartDate"]
+        },
+        "endDate": {
+          "$ref": "common.schema.json#/$defs/IsoDate",
+          "x-mapsTo": ["ubl:InvoicePeriod/cbc:EndDate"]
+        }
+      }
+    },
+    "usage": {
+      "title": "Metered usage",
+      "description": "Quantities billed for this period. Water is cubic metres (UCUM m3), the unit Canadian water utilities bill. Electricity is kilowatt-hours (UCUM kW.h), aligned with IEC 61968 MeterReading and with Green Button / NAESB ESPI UsageSummary for commodity electricity. Green Button does not cover water.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["waterM3", "electricityKWh"],
+      "properties": {
+        "waterM3": {
+          "title": "Water usage",
+          "description": "Billed water volume in cubic metres (UCUM m3).",
+          "$ref": "common.schema.json#/$defs/NonNegativeQuantity",
+          "x-mapsTo": ["ucum:m3", "IEC61968:MeterReading"],
+          "examples": [12.4]
+        },
+        "electricityKWh": {
+          "title": "Electricity usage",
+          "description": "Billed electricity in kilowatt-hours (UCUM kW.h).",
+          "$ref": "common.schema.json#/$defs/NonNegativeQuantity",
+          "x-mapsTo": ["ucum:kW.h", "espi:UsageSummary", "IEC61968:MeterReading"],
+          "examples": [640.5]
+        }
+      }
+    },
+    "priceBreakdown": {
+      "title": "Price breakdown",
+      "description": "Charge lines on the bill card. UBL invoice lines plus tax total plus allowance/charge, collapsed to the five amounts the screen shows. Signs: charges and tax are never negative; adjustments are negative for a credit and positive for an extra debit.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "waterCharge",
+        "electricityCharge",
+        "serviceFee",
+        "adjustments",
+        "tax"
+      ],
+      "properties": {
+        "waterCharge": {
+          "title": "Water charge",
+          "description": "Commodity charge for waterM3, before tax. UBL invoice line for water.",
+          "$ref": "common.schema.json#/$defs/NonNegativeAmount",
+          "x-mapsTo": ["ubl:InvoiceLine"]
+        },
+        "electricityCharge": {
+          "title": "Electricity charge",
+          "description": "Commodity charge for electricityKWh, before tax. UBL invoice line for electricity.",
+          "$ref": "common.schema.json#/$defs/NonNegativeAmount",
+          "x-mapsTo": ["ubl:InvoiceLine"]
+        },
+        "serviceFee": {
+          "title": "Service fee",
+          "description": "Fixed service or delivery charge for the period, before tax.",
+          "$ref": "common.schema.json#/$defs/NonNegativeAmount",
+          "x-mapsTo": ["ubl:InvoiceLine"]
+        },
+        "adjustments": {
+          "title": "Adjustments",
+          "description": "Credits and extra debits that are not usage or the service fee. Negative is a credit (UBL AllowanceCharge with ChargeIndicator false). Positive is an extra debit. Zero means no adjustment.",
+          "$ref": "common.schema.json#/$defs/SignedAmount",
+          "x-mapsTo": ["ubl:AllowanceCharge"]
+        },
+        "tax": {
+          "title": "Tax",
+          "description": "Sum of Canadian sales tax on this bill (GST, HST, PST, and QST as applicable), in the bill currency. UBL TaxTotal/TaxAmount. The screen has one tax figure, so tax is not split by jurisdiction here.",
+          "$ref": "common.schema.json#/$defs/NonNegativeAmount",
+          "x-mapsTo": ["ubl:TaxTotal/cbc:TaxAmount"]
+        }
+      }
+    },
+    "totalPrice": {
+      "title": "Total price",
+      "description": "Amount due for this bill before any later payment is considered. schema.org Invoice.totalPaymentDue and UBL LegalMonetaryTotal/PayableAmount. Equals waterCharge + electricityCharge + serviceFee + adjustments + tax. May be negative when credits exceed charges.",
+      "$ref": "common.schema.json#/$defs/SignedAmount",
+      "x-mapsTo": ["schema:Invoice.totalPaymentDue", "ubl:LegalMonetaryTotal/cbc:PayableAmount"]
+    },
+    "currency": {
+      "$ref": "common.schema.json#/$defs/CurrencyCode",
+      "x-mapsTo": ["iso4217:alphabetic", "ubl:PayableAmount@currencyID"]
+    },
+    "status": {
+      "title": "Bill status",
+      "description": "Payment state shown on the bill card. schema.org Invoice.paymentStatus. The paid filter matches Paid only.",
+      "$ref": "#/$defs/BillStatus",
+      "x-mapsTo": ["schema:Invoice.paymentStatus"]
+    },
+    "issuedDate": {
+      "title": "Issued date",
+      "description": "Date the bill was issued to the customer. UBL cbc:IssueDate and schema.org Invoice.dateIssued. Calendar date, not a date-time.",
+      "$ref": "common.schema.json#/$defs/IsoDate",
+      "x-mapsTo": ["ubl:Invoice/cbc:IssueDate", "schema:Invoice.dateIssued"]
+    },
+    "dueDate": {
+      "title": "Due date",
+      "description": "Date payment is due. UBL PaymentMeans/cbc:PaymentDueDate and schema.org paymentDueDate.",
+      "$ref": "common.schema.json#/$defs/IsoDate",
+      "x-mapsTo": ["ubl:PaymentMeans/cbc:PaymentDueDate", "schema:Invoice.paymentDueDate"]
+    },
+    "paymentDate": {
+      "title": "Payment date",
+      "description": "Date the bill was paid in full, or null when it has not been. Partial may carry the date of the latest payment or null. The template uses null, not an empty string.",
+      "$ref": "common.schema.json#/$defs/NullableIsoDate"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "status": { "const": "Paid" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "paymentDate": { "$ref": "common.schema.json#/$defs/IsoDate" }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "enum": ["Unpaid", "Issued", "Overdue", "Void", "Credited"] }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "paymentDate": { "type": "null" }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "BillStatus": {
+      "title": "Bill status",
+      "description": "Controlled list for the bill card.",
+      "oneOf": [
+        {
+          "const": "Issued",
+          "description": "Issued to the customer. No payment recorded. Still inside the unpaid filter."
+        },
+        {
+          "const": "Unpaid",
+          "description": "Outstanding. No payment recorded. Red badge, unpaid filter."
+        },
+        {
+          "const": "Partial",
+          "description": "Some money received and a balance remains. paymentDate may be the latest payment date or null. Unpaid filter."
+        },
+        {
+          "const": "Paid",
+          "description": "Paid in full. paymentDate is required. Teal badge, paid filter."
+        },
+        {
+          "const": "Overdue",
+          "description": "Past dueDate and not paid. paymentDate is null. Unpaid filter."
+        },
+        {
+          "const": "Void",
+          "description": "Cancelled bill. paymentDate is null. Unpaid filter on the current screen."
+        },
+        {
+          "const": "Credited",
+          "description": "Credit document rather than an amount to collect. paymentDate is null."
+        }
+      ]
+    }
+  },
+  "examples": [
+    {
+      "billingId": "BILL-100001",
+      "billingPeriod": {
+        "startDate": "2024-10-01",
+        "endDate": "2024-10-31"
+      },
+      "usage": {
+        "waterM3": 12.4,
+        "electricityKWh": 640.5
+      },
+      "priceBreakdown": {
+        "waterCharge": 28.5,
+        "electricityCharge": 86.4,
+        "serviceFee": 15.0,
+        "adjustments": 0,
+        "tax": 16.92
+      },
+      "totalPrice": 146.82,
+      "currency": "CAD",
+      "status": "Unpaid",
+      "issuedDate": "2024-11-02",
+      "dueDate": "2024-11-23",
+      "paymentDate": null
+    }
+  ]
+}

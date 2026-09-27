@@ -1,0 +1,107 @@
+.page {
+  min-height: 100vh;
+  padding: 14vh 1.25rem 5rem;
+  color: var(--on-bg);
+}
+
+.column {
+  width: min(100%, 28rem);
+  margin: 0 auto;
+}
+
+.helloRow {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 1.6rem;
+}
+
+.hello {
+  margin: 0;
+  font-size: 2.2rem;
+  font-weight: 300;
+  letter-spacing: 0;
+}
+
+.menu {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.option {
+  display: block;
+  width: 100%;
+  text-align: left;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  font: inherit;
+  font-weight: 300;
+  font-size: 1.05rem;
+  padding: 0.85rem 1rem;
+  cursor: pointer;
+}
+
+.panel {
+  display: grid;
+  gap: 0.75rem;
+  margin-top: -0.2rem;
+  padding: 0.9rem 1rem 1rem;
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  animation:
+    pop 0.4s cubic-bezier(0.16, 1, 0.3, 1) both,
+    ui-float 10s ease-in-out 0.5s infinite;
+}
+
+.panel:focus-within {
+  animation-play-state: paused;
+}
+
+.fields {
+  display: grid;
+  gap: 0.7rem;
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.link {
+  margin: 0;
+  overflow-wrap: anywhere;
+  font-size: 0.82rem;
+  font-weight: 300;
+}
+
+.veil {
+  position: fixed;
+  inset: 0;
+  z-index: 30;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(-10px) scaleY(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .panel {
+    animation: none;
+  }
+}

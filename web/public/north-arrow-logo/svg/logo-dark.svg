@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <clipPath id="arrowClip"><polygon points="100,24 138,106 112,106 112,170 88,170 88,106 62,106"/></clipPath>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="10"/></filter>
+  </defs>
+  <rect x="0" y="0" width="200" height="200" rx="40" fill="#2E3438"/>
+  <circle cx="100" cy="104" r="70" fill="#8ED0E4" opacity="0.35" filter="url(#glow)"/>
+  <g clip-path="url(#arrowClip)">
+    <path d="M0,44 Q12.5,39 25,44 T50,44 T75,44 T100,44 T125,44 T150,44 T175,44 T200,44" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M0,68 Q12.5,62.5 25,68 T50,68 T75,68 T100,68 T125,68 T150,68 T175,68 T200,68" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M0,92 Q12.5,86 25,92 T50,92 T75,92 T100,92 T125,92 T150,92 T175,92 T200,92" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M0,116 Q12.5,110 25,116 T50,116 T75,116 T100,116 T125,116 T150,116 T175,116 T200,116" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M0,140 Q12.5,133.5 25,140 T50,140 T75,140 T100,140 T125,140 T150,140 T175,140 T200,140" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M0,164 Q12.5,157.5 25,164 T50,164 T75,164 T100,164 T125,164 T150,164 T175,164 T200,164" fill="none" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" stroke-linejoin="round"/>
+    </g>
+</svg>

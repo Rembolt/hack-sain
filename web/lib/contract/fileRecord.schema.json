@@ -1,0 +1,484 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.hack-sain.invalid/contract/fileRecord.schema.json",
+  "title": "File record",
+  "description": "One stored document or export, described by the handle it is fetched with, who owns it, and how it is encrypted at rest. Matches web/app/data-templates/fileRecord.json. DocVault (SYS-14) holds the correspondence archive and retrieval takes two to four minutes per document during a call, so the handle is recorded once and reused. POST /api/files rejects a body that fails these rules, and /form/file imports the same file to show errors before submit.",
+  "x-scope": "shared-contract",
+  "x-template": "web/app/data-templates/fileRecord.json",
+  "x-standards": [
+    "JSON Schema 2020-12",
+    "RFC 3986 URI",
+    "IANA media types (RFC 6838)",
+    "FIPS 180-4 SHA-2 checksums",
+    "NIST SP 800-38D AES-GCM and RFC 8439 ChaCha20-Poly1305",
+    "ISO/IEC 27001 asset ownership and information classification",
+    "IEC 61968 document management",
+    "ISO 8601 calendar dates"
+  ],
+  "x-frontend": {
+    "classificationTone": {
+      "Public": "ok",
+      "Internal": "ok",
+      "Confidential": "alert",
+      "Restricted": "alert"
+    }
+  },
+  "x-invariants": [
+    "handle.checksum.value is the digest of the stored bytes under handle.checksum.algorithm, lowercase hex, and its length matches that algorithm.",
+    "When encryption.encrypted is true, algorithm is a cipher, keyId is a key reference, and encryptedAt is a date.",
+    "When encryption.encrypted is false, algorithm is None, keyId is an empty string, and encryptedAt is null.",
+    "ownership.retentionUntil is on or after createdDate.",
+    "When lastAccessedDate is a date, it is on or after createdDate.",
+    "Every access grant's expiresDate is null or on or after its grantedDate.",
+    "A Restricted or Confidential file is encrypted."
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "fileId",
+    "handle",
+    "ownership",
+    "encryption",
+    "access",
+    "createdDate",
+    "lastAccessedDate",
+    "notes"
+  ],
+  "properties": {
+    "fileId": {
+      "$ref": "#/$defs/FileId"
+    },
+    "handle": {
+      "title": "Handle",
+      "description": "How the bytes are found and checked. The URI is the retrieval handle; the checksum is what proves the fetched copy is the recorded one.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["uri", "systemId", "fileName", "mediaType", "sizeBytes", "checksum"],
+      "properties": {
+        "uri": {
+          "title": "Handle URI",
+          "description": "RFC 3986 absolute URI the bytes are fetched with. https for a gateway, s3 for object storage, dv for a DocVault archive reference.",
+          "type": "string",
+          "format": "uri",
+          "minLength": 7,
+          "maxLength": 2048,
+          "pattern": "^(?:https|s3|dv)://[^\\s]+$",
+          "examples": ["dv://sys-14/2024/11/ACC-100001/bill-100001.pdf"]
+        },
+        "systemId": {
+          "title": "Held in",
+          "description": "Northwind system the bytes live in. SYS-14 is DocVault, the customer document and correspondence archive. Codes come from northwind_systems.csv.",
+          "$ref": "#/$defs/SystemId"
+        },
+        "fileName": {
+          "title": "File name",
+          "description": "Name shown to a person, with an extension. No path separators: the path belongs in the URI.",
+          "type": "string",
+          "minLength": 3,
+          "maxLength": 160,
+          "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._-]{0,150}\\.[A-Za-z0-9]{1,12}$",
+          "examples": ["bill-100001.pdf"]
+        },
+        "mediaType": {
+          "title": "Media type",
+          "description": "IANA media type of the stored bytes. Type and subtype only; no parameters.",
+          "type": "string",
+          "maxLength": 127,
+          "pattern": "^[a-z]+/[a-zA-Z0-9][a-zA-Z0-9!#$&^_.+-]{0,126}$",
+          "examples": ["application/pdf", "text/csv", "image/jpeg"]
+        },
+        "sizeBytes": {
+          "title": "Size in bytes",
+          "description": "Stored size in whole bytes, counted after encryption.",
+          "type": "integer",
+          "minimum": 0,
+          "examples": [184320]
+        },
+        "checksum": {
+          "title": "Checksum",
+          "description": "Digest of the stored bytes. SHA-256 is the default; SHA-1 appears only on records migrated from the 2005 archive.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["algorithm", "value"],
+          "properties": {
+            "algorithm": {
+              "title": "Digest algorithm",
+              "$ref": "#/$defs/DigestAlgorithm"
+            },
+            "value": {
+              "title": "Digest value",
+              "description": "Lowercase hex digest: 40 characters for SHA-1, 64 for SHA-256, 128 for SHA-512.",
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{40}|[0-9a-f]{64}|[0-9a-f]{128})$",
+              "examples": ["9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"]
+            }
+          }
+        }
+      }
+    },
+    "ownership": {
+      "title": "Ownership",
+      "description": "Who the file belongs to, which Northwind function is accountable for it, and how long it is kept. ISO/IEC 27001 asset owner plus information classification.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ownerType",
+        "ownerId",
+        "ownerName",
+        "owningFunction",
+        "accountId",
+        "classification",
+        "retentionUntil"
+      ],
+      "properties": {
+        "ownerType": {
+          "title": "Owner type",
+          "$ref": "#/$defs/PrincipalType"
+        },
+        "ownerId": {
+          "title": "Owner",
+          "description": "Identifier of the owning principal, in the prefix form its type uses: ACC- for a customer, EMP- for an employee, CON- for a contractor, SYS- for a system.",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "ownerName": {
+          "title": "Owner name",
+          "description": "Person or organisation the identifier belongs to.",
+          "$ref": "common.schema.json#/$defs/AccountLabel"
+        },
+        "owningFunction": {
+          "title": "Accountable function",
+          "description": "Northwind function accountable for the file. Values are the owning functions in northwind_systems.csv.",
+          "$ref": "#/$defs/OwningFunction"
+        },
+        "accountId": {
+          "title": "Account",
+          "description": "Customer account the file is filed against, or an empty string when it is not customer correspondence.",
+          "oneOf": [
+            { "const": "" },
+            { "$ref": "common.schema.json#/$defs/AccountId" }
+          ],
+          "examples": ["ACC-100001", ""]
+        },
+        "classification": {
+          "title": "Classification",
+          "description": "Handling class. Confidential and Restricted files must be encrypted.",
+          "$ref": "#/$defs/Classification"
+        },
+        "retentionUntil": {
+          "title": "Keep until",
+          "description": "Date the file may be destroyed. On or after createdDate.",
+          "$ref": "common.schema.json#/$defs/IsoDate"
+        }
+      }
+    },
+    "encryption": {
+      "title": "Encryption",
+      "description": "How the bytes are protected at rest. Unencrypted records state that explicitly rather than leaving the block blank.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["encrypted", "algorithm", "keyManagement", "keyId", "encryptedAt"],
+      "properties": {
+        "encrypted": {
+          "title": "Encrypted at rest",
+          "type": "boolean"
+        },
+        "algorithm": {
+          "title": "Cipher",
+          "description": "Authenticated cipher used, or None when the file is stored in the clear.",
+          "$ref": "#/$defs/CipherAlgorithm"
+        },
+        "keyManagement": {
+          "title": "Key management",
+          "$ref": "#/$defs/KeyManagement"
+        },
+        "keyId": {
+          "title": "Key reference",
+          "description": "Reference to the key, never the key itself. Empty string when the file is not encrypted.",
+          "oneOf": [
+            { "const": "" },
+            { "$ref": "#/$defs/KeyId" }
+          ],
+          "examples": ["KEY-7FA31C", ""]
+        },
+        "encryptedAt": {
+          "title": "Encrypted on",
+          "description": "Date the stored copy was encrypted, or null when it is not encrypted.",
+          "$ref": "common.schema.json#/$defs/NullableIsoDate"
+        }
+      }
+    },
+    "access": {
+      "title": "Access grants",
+      "description": "Who may do what with the file. An empty array means only the owner and the accountable function.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/AccessGrant" }
+    },
+    "createdDate": {
+      "title": "Stored on",
+      "description": "Date the file was put into the archive.",
+      "$ref": "common.schema.json#/$defs/IsoDate"
+    },
+    "lastAccessedDate": {
+      "title": "Last opened",
+      "description": "Date the file was last retrieved, or null when it has not been opened since it was stored.",
+      "$ref": "common.schema.json#/$defs/NullableIsoDate"
+    },
+    "notes": {
+      "title": "Notes",
+      "description": "Anything a later reader needs, such as the migration it arrived in. Empty string when there is nothing to add.",
+      "type": "string",
+      "maxLength": 2000
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "encryption": {
+            "properties": { "encrypted": { "const": true } },
+            "required": ["encrypted"]
+          }
+        },
+        "required": ["encryption"]
+      },
+      "then": {
+        "properties": {
+          "encryption": {
+            "properties": {
+              "algorithm": { "$ref": "#/$defs/CipherInUse" },
+              "keyId": { "$ref": "#/$defs/KeyId" },
+              "encryptedAt": { "$ref": "common.schema.json#/$defs/IsoDate" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "encryption": {
+            "properties": { "encrypted": { "const": false } },
+            "required": ["encrypted"]
+          }
+        },
+        "required": ["encryption"]
+      },
+      "then": {
+        "properties": {
+          "encryption": {
+            "properties": {
+              "algorithm": { "const": "None" },
+              "keyId": { "const": "" },
+              "encryptedAt": { "type": "null" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "ownership": {
+            "properties": {
+              "classification": { "enum": ["Confidential", "Restricted"] }
+            },
+            "required": ["classification"]
+          }
+        },
+        "required": ["ownership"]
+      },
+      "then": {
+        "properties": {
+          "encryption": {
+            "properties": { "encrypted": { "const": true } }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "FileId": {
+      "title": "File identifier",
+      "description": "Identifier of the archive record. Form FILE- plus six digits, parallel to ACC-, BILL-, and NW-.",
+      "type": "string",
+      "pattern": "^FILE-[0-9]{6}$",
+      "examples": ["FILE-100001"]
+    },
+    "SystemId": {
+      "title": "Northwind system",
+      "description": "System code from northwind_systems.csv, SYS-01 through SYS-15.",
+      "type": "string",
+      "pattern": "^SYS-(?:0[1-9]|1[0-5])$",
+      "examples": ["SYS-14"]
+    },
+    "PrincipalId": {
+      "title": "Principal identifier",
+      "description": "Customer, employee, contractor, or system identifier. Prefix follows the principal type.",
+      "type": "string",
+      "pattern": "^(?:ACC-[0-9]{6}|EMP-[0-9]{4,8}|CON-[0-9]{3,8}|SYS-(?:0[1-9]|1[0-5]))$",
+      "examples": ["ACC-100001", "EMP-10042", "CON-4181", "SYS-14"]
+    },
+    "PrincipalType": {
+      "title": "Principal type",
+      "oneOf": [
+        { "const": "Customer", "description": "An ACC- account holder." },
+        { "const": "Employee", "description": "An EMP- member of staff." },
+        { "const": "Contractor", "description": "A CON- service firm." },
+        { "const": "System", "description": "A SYS- system acting on its own behalf, such as a nightly export." }
+      ]
+    },
+    "OwningFunction": {
+      "title": "Accountable function",
+      "description": "Owning functions recorded in northwind_systems.csv.",
+      "oneOf": [
+        { "const": "Customer Ops" },
+        { "const": "Customer Ops IT" },
+        { "const": "Finance" },
+        { "const": "Finance IT" },
+        { "const": "Digital" },
+        { "const": "Metering" },
+        { "const": "Operations" },
+        { "const": "Network" },
+        { "const": "Water Ops" },
+        { "const": "Regulatory Affairs" },
+        { "const": "HR" }
+      ]
+    },
+    "Classification": {
+      "title": "Information classification",
+      "oneOf": [
+        { "const": "Public", "description": "May be published." },
+        { "const": "Internal", "description": "Northwind staff and contractors." },
+        { "const": "Confidential", "description": "Named recipients only. Encrypted at rest." },
+        { "const": "Restricted", "description": "Named recipients, logged access. Encrypted at rest." }
+      ]
+    },
+    "DigestAlgorithm": {
+      "title": "Digest algorithm",
+      "oneOf": [
+        { "const": "SHA-256", "description": "Default for new records. 64 hex characters." },
+        { "const": "SHA-512", "description": "128 hex characters." },
+        { "const": "SHA-1", "description": "Legacy only, from the 2005 archive. 40 hex characters. Not for new records." }
+      ]
+    },
+    "CipherAlgorithm": {
+      "title": "Cipher",
+      "oneOf": [
+        { "$ref": "#/$defs/CipherInUse" },
+        { "const": "None", "description": "Stored in the clear. Only for Public and Internal files." }
+      ]
+    },
+    "CipherInUse": {
+      "title": "Authenticated cipher",
+      "oneOf": [
+        { "const": "AES-256-GCM", "description": "NIST SP 800-38D. Default for new records." },
+        { "const": "AES-128-GCM", "description": "NIST SP 800-38D." },
+        { "const": "ChaCha20-Poly1305", "description": "RFC 8439." }
+      ]
+    },
+    "KeyManagement": {
+      "title": "Key management",
+      "oneOf": [
+        { "const": "Provider-managed key", "description": "Keys held by the storage provider." },
+        { "const": "Customer-managed key", "description": "Keys held by Northwind in its own key service." },
+        { "const": "Hardware security module", "description": "Keys never leave an HSM." },
+        { "const": "Not applicable", "description": "Used with cipher None." }
+      ]
+    },
+    "KeyId": {
+      "title": "Key reference",
+      "description": "Opaque handle for the key. Form KEY- plus four to twelve uppercase hex characters. Never a key value.",
+      "type": "string",
+      "pattern": "^KEY-[0-9A-F]{4,12}$",
+      "examples": ["KEY-7FA31C"]
+    },
+    "AccessGrant": {
+      "title": "Access grant",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "principalType",
+        "principalId",
+        "permission",
+        "grantedDate",
+        "expiresDate"
+      ],
+      "properties": {
+        "principalType": {
+          "title": "Principal type",
+          "$ref": "#/$defs/PrincipalType"
+        },
+        "principalId": {
+          "title": "Principal",
+          "$ref": "#/$defs/PrincipalId"
+        },
+        "permission": {
+          "title": "Permission",
+          "$ref": "#/$defs/Permission"
+        },
+        "grantedDate": {
+          "title": "Granted on",
+          "$ref": "common.schema.json#/$defs/IsoDate"
+        },
+        "expiresDate": {
+          "title": "Expires on",
+          "description": "Date the grant lapses, or null for a standing grant.",
+          "$ref": "common.schema.json#/$defs/NullableIsoDate"
+        }
+      }
+    },
+    "Permission": {
+      "title": "Permission",
+      "oneOf": [
+        { "const": "Read", "description": "Fetch the bytes." },
+        { "const": "Write", "description": "Replace the bytes with a new version." },
+        { "const": "Delete", "description": "Destroy the record before its retention date." },
+        { "const": "Share", "description": "Grant access to a further principal." }
+      ]
+    }
+  },
+  "examples": [
+    {
+      "fileId": "FILE-100001",
+      "handle": {
+        "uri": "dv://sys-14/2024/11/ACC-100001/bill-100001.pdf",
+        "systemId": "SYS-14",
+        "fileName": "bill-100001.pdf",
+        "mediaType": "application/pdf",
+        "sizeBytes": 184320,
+        "checksum": {
+          "algorithm": "SHA-256",
+          "value": "9f86d081884c7d659a2feaa0c55ad015a3bf4f1b2b0b822cd15d6c15b0f00a08"
+        }
+      },
+      "ownership": {
+        "ownerType": "Customer",
+        "ownerId": "ACC-100001",
+        "ownerName": "John Smith",
+        "owningFunction": "Customer Ops",
+        "accountId": "ACC-100001",
+        "classification": "Confidential",
+        "retentionUntil": "2031-11-02"
+      },
+      "encryption": {
+        "encrypted": true,
+        "algorithm": "AES-256-GCM",
+        "keyManagement": "Customer-managed key",
+        "keyId": "KEY-7FA31C",
+        "encryptedAt": "2024-11-02"
+      },
+      "access": [
+        {
+          "principalType": "Employee",
+          "principalId": "EMP-10042",
+          "permission": "Read",
+          "grantedDate": "2024-11-03",
+          "expiresDate": null
+        }
+      ],
+      "createdDate": "2024-11-02",
+      "lastAccessedDate": "2024-11-14",
+      "notes": ""
+    }
+  ]
+}

@@ -1,0 +1,40 @@
+{
+  "fileId": "",
+
+  "handle": {
+    "uri": "",
+    "systemId": "",
+    "fileName": "",
+    "mediaType": "",
+    "sizeBytes": 0,
+
+    "checksum": {
+      "algorithm": "",
+      "value": ""
+    }
+  },
+
+  "ownership": {
+    "ownerType": "",
+    "ownerId": "",
+    "ownerName": "",
+    "owningFunction": "",
+    "accountId": "",
+    "classification": "",
+    "retentionUntil": ""
+  },
+
+  "encryption": {
+    "encrypted": false,
+    "algorithm": "",
+    "keyManagement": "",
+    "keyId": "",
+    "encryptedAt": null
+  },
+
+  "access": [],
+
+  "createdDate": "",
+  "lastAccessedDate": null,
+  "notes": ""
+}

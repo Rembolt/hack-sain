@@ -1,0 +1,482 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.hack-sain.invalid/contract/serviceVisit.schema.json",
+  "title": "Service visit",
+  "description": "One field visit written up by the service contractor who did the work, matching web/app/data-templates/serviceVisit.json. Dispatch lives in FieldForce (SYS-08), which has no link to the complaint system, so complaintId is carried here by hand and may be an empty string. POST /api/service-visits rejects a body that fails these rules, and /form/service-visit imports the same file to show errors before submit.",
+  "x-scope": "shared-contract",
+  "x-template": "web/app/data-templates/serviceVisit.json",
+  "x-standards": [
+    "JSON Schema 2020-12",
+    "IEC 61968 work management (WorkOrder, WorkTask, Activity) and MeterReading",
+    "ISO 8601 calendar dates and 24-hour clock times",
+    "UCUM m3 and kW.h",
+    "ISO 4217 via charges.currency",
+    "ISO 10002:2018 for the complaint a visit answers"
+  ],
+  "x-frontend": {
+    "outcomeTone": {
+      "Completed": "ok",
+      "Partially completed": "ok",
+      "No access": "alert",
+      "Aborted": "alert",
+      "Follow-up required": "alert"
+    }
+  },
+  "x-invariants": [
+    "appointment.visitDate is on or after appointment.scheduledDate.",
+    "appointment.departureTime is later than appointment.arrivalTime on the same visit day.",
+    "charges.totalCharge equals labourCharge + partsCharge, rounded to cents.",
+    "charges.partsCharge is the sum of quantity times unitCost over parts.",
+    "When work.followUpRequired is true, work.followUpDate is a date on or after appointment.visitDate.",
+    "When meterRead.readingType is Not taken, both readings are 0.",
+    "A field meter visit is costed at 92.00 CAD and a smart meter installation at 148.00 CAD in northwind_unit_costs.csv; charges here are what the contractor billed, not that model."
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "visitId",
+    "accountId",
+    "complaintId",
+    "contractor",
+    "serviceAddress",
+    "region",
+    "appointment",
+    "work",
+    "meterRead",
+    "charges",
+    "parts"
+  ],
+  "properties": {
+    "visitId": {
+      "$ref": "#/$defs/VisitId",
+      "x-mapsTo": ["IEC61968:WorkTask.mRID"]
+    },
+    "accountId": {
+      "title": "Account",
+      "description": "Account the premise is billed to. Form ACC- plus six digits, as on the account file.",
+      "$ref": "common.schema.json#/$defs/AccountId",
+      "x-mapsTo": ["IEC61968:CustomerAccount.mRID"]
+    },
+    "complaintId": {
+      "title": "Complaint",
+      "description": "Complaint the visit answers, or an empty string for planned work with no case. Cases transferred between systems lose their history, so an engineer may arrive without one.",
+      "oneOf": [
+        { "const": "" },
+        { "$ref": "common.schema.json#/$defs/ComplaintId" }
+      ],
+      "examples": ["NW-100001", ""]
+    },
+    "contractor": {
+      "title": "Contractor",
+      "description": "Firm that was dispatched and the engineer who attended. IEC 61968 Crew and CrewMember.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contractorId", "contractorName", "engineerId", "engineerName"],
+      "properties": {
+        "contractorId": {
+          "$ref": "#/$defs/ContractorId"
+        },
+        "contractorName": {
+          "title": "Contractor name",
+          "description": "Trading name of the service firm.",
+          "$ref": "common.schema.json#/$defs/AccountLabel",
+          "examples": ["Calderfield Metering Services"]
+        },
+        "engineerId": {
+          "title": "Engineer",
+          "description": "Identifier of the attending engineer. Same EMP- form as a complaint assignee.",
+          "$ref": "common.schema.json#/$defs/EmployeeId"
+        },
+        "engineerName": {
+          "title": "Engineer name",
+          "$ref": "common.schema.json#/$defs/PersonName"
+        }
+      }
+    },
+    "serviceAddress": {
+      "$ref": "common.schema.json#/$defs/ServiceAddress",
+      "x-mapsTo": ["IEC61968:ServiceLocation"]
+    },
+    "region": {
+      "title": "Region",
+      "description": "Northwind operating region, as used by northwind_meter_reads.csv and the complaints extract.",
+      "$ref": "#/$defs/Region"
+    },
+    "appointment": {
+      "title": "Appointment",
+      "description": "Slot the visit was booked for and the hours actually worked. Times are local 24-hour clock times, which is what a time input submits.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["scheduledDate", "visitDate", "arrivalTime", "departureTime"],
+      "properties": {
+        "scheduledDate": {
+          "title": "Scheduled date",
+          "description": "Date the slot was booked for. A missed appointment is a regulated standard with a 40.00 CAD compensation payment.",
+          "$ref": "common.schema.json#/$defs/IsoDate"
+        },
+        "visitDate": {
+          "title": "Visit date",
+          "description": "Date the engineer attended.",
+          "$ref": "common.schema.json#/$defs/IsoDate"
+        },
+        "arrivalTime": {
+          "title": "Arrival time",
+          "$ref": "#/$defs/ClockTime"
+        },
+        "departureTime": {
+          "title": "Departure time",
+          "$ref": "#/$defs/ClockTime"
+        }
+      }
+    },
+    "work": {
+      "title": "Work done",
+      "description": "What the contractor did and how the visit ended. IEC 61968 Activity plus the completion status.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "workType",
+        "outcome",
+        "systemId",
+        "description",
+        "followUpRequired",
+        "followUpDate"
+      ],
+      "properties": {
+        "workType": {
+          "title": "Work type",
+          "$ref": "#/$defs/WorkType"
+        },
+        "outcome": {
+          "title": "Outcome",
+          "$ref": "#/$defs/VisitOutcome"
+        },
+        "systemId": {
+          "title": "Recorded in",
+          "description": "Northwind system the write-up was entered into. SYS-08 is FieldForce, the scheduling and dispatch system. Codes come from northwind_systems.csv.",
+          "$ref": "#/$defs/SystemId"
+        },
+        "description": {
+          "title": "Work description",
+          "description": "What the engineer found and did, in the contractor's words.",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2000,
+          "examples": [
+            "Replaced the stuck water meter and took a closing read. Stopcock left accessible."
+          ]
+        },
+        "followUpRequired": {
+          "title": "Follow-up required",
+          "description": "True when another visit or an office action is still owed.",
+          "type": "boolean"
+        },
+        "followUpDate": {
+          "title": "Follow-up date",
+          "description": "Date the follow-up is booked for, or null when none is owed.",
+          "$ref": "common.schema.json#/$defs/NullableIsoDate"
+        }
+      }
+    },
+    "meterRead": {
+      "title": "Meter read",
+      "description": "Read taken at the visit. MeterHub (SYS-06) estimates when no read is returned, so Not taken is recorded explicitly rather than left blank. IEC 61968 MeterReading.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["meterId", "readingType", "waterM3", "electricityKWh"],
+      "properties": {
+        "meterId": {
+          "$ref": "#/$defs/MeterId"
+        },
+        "readingType": {
+          "title": "Reading type",
+          "$ref": "#/$defs/ReadingType"
+        },
+        "waterM3": {
+          "title": "Water reading",
+          "description": "Register reading in cubic metres (UCUM m3). Zero when no read was taken.",
+          "$ref": "common.schema.json#/$defs/NonNegativeQuantity"
+        },
+        "electricityKWh": {
+          "title": "Electricity reading",
+          "description": "Register reading in kilowatt-hours (UCUM kW.h). Zero when no read was taken.",
+          "$ref": "common.schema.json#/$defs/NonNegativeQuantity"
+        }
+      }
+    },
+    "charges": {
+      "title": "Charges",
+      "description": "What the contractor is billing Northwind for this visit, in Canadian dollars.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "labourHours",
+        "labourCharge",
+        "partsCharge",
+        "totalCharge",
+        "currency"
+      ],
+      "properties": {
+        "labourHours": {
+          "title": "Labour hours",
+          "description": "Hours on site, decimal.",
+          "$ref": "common.schema.json#/$defs/NonNegativeQuantity",
+          "examples": [1.5]
+        },
+        "labourCharge": {
+          "title": "Labour charge",
+          "$ref": "common.schema.json#/$defs/NonNegativeAmount"
+        },
+        "partsCharge": {
+          "title": "Parts charge",
+          "description": "Sum of the parts lines below. Zero when nothing was fitted.",
+          "$ref": "common.schema.json#/$defs/NonNegativeAmount"
+        },
+        "totalCharge": {
+          "title": "Total charge",
+          "description": "Labour plus parts. Tax is settled on the contractor's own invoice and is not carried here.",
+          "$ref": "common.schema.json#/$defs/NonNegativeAmount"
+        },
+        "currency": {
+          "$ref": "common.schema.json#/$defs/CurrencyCode"
+        }
+      }
+    },
+    "parts": {
+      "title": "Parts fitted",
+      "description": "Parts used on the visit. An empty array when none were.",
+      "type": "array",
+      "items": { "$ref": "#/$defs/VisitPart" }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "work": {
+            "properties": { "followUpRequired": { "const": false } },
+            "required": ["followUpRequired"]
+          }
+        },
+        "required": ["work"]
+      },
+      "then": {
+        "properties": {
+          "work": {
+            "properties": { "followUpDate": { "type": "null" } }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "work": {
+            "properties": { "followUpRequired": { "const": true } },
+            "required": ["followUpRequired"]
+          }
+        },
+        "required": ["work"]
+      },
+      "then": {
+        "properties": {
+          "work": {
+            "properties": {
+              "followUpDate": { "$ref": "common.schema.json#/$defs/IsoDate" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "meterRead": {
+            "properties": { "readingType": { "const": "Not taken" } },
+            "required": ["readingType"]
+          }
+        },
+        "required": ["meterRead"]
+      },
+      "then": {
+        "properties": {
+          "meterRead": {
+            "properties": {
+              "waterM3": { "const": 0 },
+              "electricityKWh": { "const": 0 }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "VisitId": {
+      "title": "Service visit identifier",
+      "description": "Identifier printed on the visit write-up. Form SV- plus six digits, parallel to ACC-, BILL-, and NW-.",
+      "type": "string",
+      "pattern": "^SV-[0-9]{6}$",
+      "examples": ["SV-100001"]
+    },
+    "ContractorId": {
+      "title": "Contractor identifier",
+      "description": "Firm on the Northwind field services framework. Form CON- plus three to eight digits.",
+      "type": "string",
+      "pattern": "^CON-[0-9]{3,8}$",
+      "examples": ["CON-4181"]
+    },
+    "MeterId": {
+      "title": "Meter identifier",
+      "description": "Meter serial as held by MeterHub. Form MTR- plus eight digits.",
+      "type": "string",
+      "pattern": "^MTR-[0-9]{8}$",
+      "examples": ["MTR-40021785"]
+    },
+    "SystemId": {
+      "title": "Northwind system",
+      "description": "System code from northwind_systems.csv, SYS-01 through SYS-15.",
+      "type": "string",
+      "pattern": "^SYS-(?:0[1-9]|1[0-5])$",
+      "examples": ["SYS-08"]
+    },
+    "ClockTime": {
+      "title": "Local clock time",
+      "description": "Local 24-hour time as hours and minutes, the value a time input submits. No seconds and no UTC offset: a visit is recorded in the region's own working day.",
+      "type": "string",
+      "pattern": "^(?:[01][0-9]|2[0-3]):[0-5][0-9]$",
+      "x-control": "time",
+      "examples": ["09:15", "14:40"]
+    },
+    "Region": {
+      "title": "Northwind region",
+      "oneOf": [
+        { "const": "Ashford", "description": "Smart metering live on SYS-07." },
+        { "const": "Barrowdale", "description": "Still billed by Aurora (SYS-01). Highest estimated-read rate." },
+        { "const": "Calderfield", "description": "Smart metering live on SYS-07." },
+        { "const": "Dunmoor", "description": "Still billed by Aurora (SYS-01)." },
+        { "const": "Eastmarch", "description": "Smart metering live on SYS-07." },
+        { "const": "Fenwick", "description": "Smart metering live on SYS-07." }
+      ]
+    },
+    "WorkType": {
+      "title": "Work type",
+      "description": "Field activities Northwind dispatches a contractor for.",
+      "oneOf": [
+        { "const": "Meter read verification", "description": "Attend to take or check a read after an estimate was disputed." },
+        { "const": "Meter exchange", "description": "Replace a failed or stuck meter." },
+        { "const": "Smart meter installation", "description": "SYS-07 rollout work." },
+        { "const": "Leak repair", "description": "Water network or supply-pipe repair." },
+        { "const": "Supply restoration", "description": "Restore an interrupted supply." },
+        { "const": "Pressure or quality test", "description": "Answer a water pressure or quality complaint." },
+        { "const": "Appointment revisit", "description": "Return after a missed or aborted appointment." },
+        { "const": "Inspection", "description": "Planned inspection with no fault reported." },
+        { "const": "Other" }
+      ]
+    },
+    "VisitOutcome": {
+      "title": "Visit outcome",
+      "oneOf": [
+        { "const": "Completed", "description": "Work finished. Nothing further owed." },
+        { "const": "Partially completed", "description": "Some work done and a balance remains." },
+        { "const": "No access", "description": "Could not get to the meter or premise." },
+        { "const": "Aborted", "description": "Visit abandoned, for example on safety grounds." },
+        { "const": "Follow-up required", "description": "Attended and diagnosed; another visit is owed." }
+      ]
+    },
+    "ReadingType": {
+      "title": "Reading type",
+      "oneOf": [
+        { "const": "Actual", "description": "Read off the register at the visit." },
+        { "const": "Estimated", "description": "Estimated by the engineer because the register could not be read." },
+        { "const": "Not taken", "description": "No read at all. Both readings are 0." }
+      ]
+    },
+    "VisitPart": {
+      "title": "Part",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["partCode", "description", "quantity", "unitCost"],
+      "properties": {
+        "partCode": {
+          "title": "Part code",
+          "description": "Contractor's catalogue code. Form PRT- plus three to eight digits.",
+          "type": "string",
+          "pattern": "^PRT-[0-9]{3,8}$",
+          "examples": ["PRT-2201"]
+        },
+        "description": {
+          "title": "Part description",
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "examples": ["15mm water meter, single jet"]
+        },
+        "quantity": {
+          "title": "Quantity",
+          "$ref": "common.schema.json#/$defs/Count",
+          "examples": [1]
+        },
+        "unitCost": {
+          "title": "Unit cost",
+          "$ref": "common.schema.json#/$defs/NonNegativeAmount"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "visitId": "SV-100001",
+      "accountId": "ACC-100001",
+      "complaintId": "NW-100001",
+      "contractor": {
+        "contractorId": "CON-4181",
+        "contractorName": "Calderfield Metering Services",
+        "engineerId": "EMP-20817",
+        "engineerName": "Dev Sharma"
+      },
+      "serviceAddress": {
+        "houseNumber": "123",
+        "street": "Maple Avenue",
+        "city": "Toronto",
+        "province": "ON",
+        "postalCode": "M5V 2A1"
+      },
+      "region": "Ashford",
+      "appointment": {
+        "scheduledDate": "2024-11-12",
+        "visitDate": "2024-11-12",
+        "arrivalTime": "09:15",
+        "departureTime": "10:35"
+      },
+      "work": {
+        "workType": "Meter exchange",
+        "outcome": "Completed",
+        "systemId": "SYS-08",
+        "description": "Replaced the stuck water meter and took a closing read. Stopcock left accessible.",
+        "followUpRequired": false,
+        "followUpDate": null
+      },
+      "meterRead": {
+        "meterId": "MTR-40021785",
+        "readingType": "Actual",
+        "waterM3": 418.2,
+        "electricityKWh": 0
+      },
+      "charges": {
+        "labourHours": 1.5,
+        "labourCharge": 92.0,
+        "partsCharge": 64.5,
+        "totalCharge": 156.5,
+        "currency": "CAD"
+      },
+      "parts": [
+        {
+          "partCode": "PRT-2201",
+          "description": "15mm water meter, single jet",
+          "quantity": 1,
+          "unitCost": 64.5
+        }
+      ]
+    }
+  ]
+}

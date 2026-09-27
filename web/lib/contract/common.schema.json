@@ -1,0 +1,269 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.hack-sain.invalid/contract/common.schema.json",
+  "title": "Northwind account-file common types",
+  "description": "Shared account-file contract. POST /api/accounts rejects a body that fails these rules, and the account page imports the same files to show errors before submit. $id uses the reserved .invalid host (RFC 2606) so these files can $ref each other. Patterns are the normative constraints. format is the JSON Schema format annotation (date, email) for editors that assert formats. The format-assertion vocabulary is not required by the draft 2020-12 meta-schema, so do not rely on format alone.",
+  "x-scope": "shared-contract",
+  "x-standards": [
+    {
+      "title": "JSON Schema 2020-12",
+      "uri": "https://json-schema.org/draft/2020-12/schema"
+    },
+    {
+      "title": "Schema.org Person, PostalAddress, and Invoice",
+      "uri": "https://schema.org/"
+    },
+    {
+      "title": "ISO 8601 calendar date / RFC 3339 full-date",
+      "uri": "https://www.rfc-editor.org/rfc/rfc3339#section-5.6"
+    },
+    {
+      "title": "ISO 4217 currency codes",
+      "uri": "https://www.iso.org/iso-4217-currency-codes.html"
+    },
+    {
+      "title": "ISO 3166-2:CA province and territory codes",
+      "uri": "https://www.iso.org/obp/ui/#iso:code:3166:CA"
+    },
+    {
+      "title": "Canada Post addressing guidelines",
+      "uri": "https://www.canadapost-postescanada.ca/cpc/en/support/articles/addressing-guidelines/overview.page"
+    },
+    {
+      "title": "ITU-T E.164 telephone numbers",
+      "uri": "https://www.itu.int/rec/T-REC-E.164/"
+    },
+    {
+      "title": "NANP",
+      "uri": "https://www.nanpa.com/"
+    },
+    {
+      "title": "RFC 5321 email address length",
+      "uri": "https://www.rfc-editor.org/rfc/rfc5321"
+    },
+    {
+      "title": "UCUM",
+      "uri": "https://ucum.org/"
+    },
+    {
+      "title": "OASIS UBL 2.1 Invoice",
+      "uri": "https://docs.oasis-open.org/ubl/UBL-2.1.html"
+    },
+    {
+      "title": "IEC 61968 CIM customer and meter-reading profiles",
+      "uri": "https://www.iec.ch/homepage"
+    },
+    {
+      "title": "NAESB ESPI / Green Button energy usage",
+      "uri": "https://www.greenbuttondata.org/"
+    },
+    {
+      "title": "ISO 10002:2018 complaints handling",
+      "uri": "https://www.iso.org/standard/71580.html"
+    }
+  ],
+  "$defs": {
+    "IsoDate": {
+      "title": "ISO 8601 calendar date",
+      "description": "RFC 3339 full-date (YYYY-MM-DD), which is the ISO 8601 calendar-date profile the account file parses in formatDate. The pattern rejects impossible days, including 31 April and 29 February outside a Gregorian leap year.",
+      "type": "string",
+      "format": "date",
+      "minLength": 10,
+      "maxLength": 10,
+      "pattern": "^(?:(?:[0-9]{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12][0-9]|3[01])|(?:0[469]|11)-(?:0[1-9]|[12][0-9]|30)|02-(?:0[1-9]|1[0-9]|2[0-8])))|(?:(?:[0-9]{2}(?:0[48]|[2468][048]|[13579][26])|(?:0[48]|[2468][048]|[13579][26])00)-02-29))$",
+      "examples": ["2024-10-01"]
+    },
+    "NullableIsoDate": {
+      "title": "ISO 8601 date or null",
+      "description": "A calendar date, or null when the event has not happened. paymentDate and closedDate use null for this, matching the templates.",
+      "oneOf": [
+        { "$ref": "#/$defs/IsoDate" },
+        { "type": "null" }
+      ]
+    },
+    "CurrencyCode": {
+      "title": "ISO 4217 currency code",
+      "description": "ISO 4217 alphabetic code. This frontend contract bills in Canadian dollars. Intl.NumberFormat in formatMoney receives this code. The pattern is the ISO 4217 alphabetic form; const fixes the code to CAD.",
+      "type": "string",
+      "const": "CAD",
+      "pattern": "^[A-Z]{3}$",
+      "examples": ["CAD"]
+    },
+    "EmailAddress": {
+      "title": "Email address",
+      "description": "schema.org email. Practical addr-spec used by the client form: dot-atom local part, hostname labels, and a letter TLD. Maximum length 254 is the RFC 5321 path limit. Quoted local-parts and IP-literal domains are outside this contract.",
+      "type": "string",
+      "format": "email",
+      "minLength": 6,
+      "maxLength": 254,
+      "pattern": "^[A-Za-z0-9._%+-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)+$",
+      "examples": ["john.smith@email.com"]
+    },
+    "PhoneNumber": {
+      "title": "Telephone number",
+      "description": "schema.org telephone. Accepts ITU-T E.164 (+ then 2 to 15 digits) or the NANP display form used on the account file, +1-NPA-NXX-XXXX. The display form is what exampleData.json stores.",
+      "type": "string",
+      "minLength": 8,
+      "maxLength": 16,
+      "pattern": "^(?:\\+[1-9][0-9]{1,14}|\\+1-[0-9]{3}-[0-9]{3}-[0-9]{4})$",
+      "examples": ["+1-555-123-4567", "+14165550199"]
+    },
+    "PersonName": {
+      "title": "Person name",
+      "description": "schema.org Person.name. Latin letters, spaces, hyphens, apostrophes, and periods so Canadian French and compound surnames fit.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'’. -]{0,99}$",
+      "examples": ["John Smith", "Marie-Claire O'Brien"]
+    },
+    "AccountLabel": {
+      "title": "Account label",
+      "description": "Name printed at the top of the account file. A household label or a commercial name. Digits and ampersand are allowed; the customer name stays a person name.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "^[A-Za-z0-9À-ÖØ-öø-ÿ][A-Za-z0-9À-ÖØ-öø-ÿ'’.,& -]{0,119}$",
+      "examples": ["John Smith", "Smith & Sons"]
+    },
+    "AccountId": {
+      "title": "Customer account identifier",
+      "description": "IEC 61968 CustomerAccount identifier as shown on the account file. Form ACC- plus six digits, matching exampleData.json and the complaints extract account_id.",
+      "type": "string",
+      "pattern": "^ACC-[0-9]{6}$",
+      "examples": ["ACC-100001"]
+    },
+    "BillingId": {
+      "title": "Bill identifier",
+      "description": "Identifier printed on the bill card. UBL Invoice cbc:ID. Frontend form BILL- plus six digits, parallel to ACC- and NW-.",
+      "type": "string",
+      "pattern": "^BILL-[0-9]{6}$",
+      "examples": ["BILL-100001"]
+    },
+    "ComplaintId": {
+      "title": "Complaint identifier",
+      "description": "Case identifier. Form NW- plus six digits, matching complaint_id in the complaints extract. ISO 10002 complaint record id.",
+      "type": "string",
+      "pattern": "^NW-[0-9]{6}$",
+      "examples": ["NW-100001"]
+    },
+    "TicketNumber": {
+      "title": "Contact-centre ticket number",
+      "description": "Ticket shown on the complaint timeline. Separate from complaintId so a case id and a telephony ticket can both be displayed.",
+      "type": "string",
+      "pattern": "^TKT-[0-9]{6}$",
+      "examples": ["TKT-100001"]
+    },
+    "EmployeeId": {
+      "title": "Employee identifier",
+      "description": "Agent assigned to the complaint. Form EMP- plus four to eight digits.",
+      "type": "string",
+      "pattern": "^EMP-[0-9]{4,8}$",
+      "examples": ["EMP-10042"]
+    },
+    "CanadaPostalCode": {
+      "title": "Canada Post postal code",
+      "description": "schema.org postalCode. Canada Post ANA NAN form: uppercase, one space, no postal code starting with D, F, I, O, Q, U, W, or Z. Letters D, F, I, O, Q, and U never appear.",
+      "type": "string",
+      "pattern": "^[ABCEGHJ-NPRSTVXY][0-9][ABCEGHJ-NPRSTV-Z] [0-9][ABCEGHJ-NPRSTV-Z][0-9]$",
+      "examples": ["M5V 2A1", "L5B 1M1"]
+    },
+    "CaProvinceCode": {
+      "title": "Canadian province or territory",
+      "description": "schema.org addressRegion. ISO 3166-2:CA subdivision code without the CA- prefix, which is how the account file prints the province.",
+      "type": "string",
+      "enum": ["AB", "BC", "MB", "NB", "NL", "NS", "NT", "NU", "ON", "PE", "QC", "SK", "YT"],
+      "examples": ["ON"]
+    },
+    "CivicNumber": {
+      "title": "Civic number",
+      "description": "Canada Post civic number, optionally with a letter suffix or a range such as 12A or 10-12. The account file prints this in front of the street.",
+      "type": "string",
+      "pattern": "^[0-9]{1,6}[A-Za-z]?(?:[/-][0-9]{1,6}[A-Za-z]?)?$",
+      "examples": ["123", "12A", "10-12"]
+    },
+    "StreetLine": {
+      "title": "Street",
+      "description": "Canada Post street name and type. Maximum 64 characters. A suite or unit is not its own field in this contract; when one exists, put it in this line.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 64,
+      "pattern": "^[0-9A-Za-zÀ-ÖØ-öø-ÿ][0-9A-Za-zÀ-ÖØ-öø-ÿ'’.,#/ -]{0,63}$",
+      "examples": ["Maple Avenue", "Apt 4 - Oak Street"]
+    },
+    "Municipality": {
+      "title": "Municipality",
+      "description": "schema.org addressLocality. Canada Post municipality name.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 40,
+      "pattern": "^[A-Za-zÀ-ÖØ-öø-ÿ][A-Za-zÀ-ÖØ-öø-ÿ'’. -]{0,39}$",
+      "examples": ["Toronto", "St. John's", "Niagara-on-the-Lake"]
+    },
+    "ServiceAddress": {
+      "title": "Service address",
+      "description": "Premise the water and electricity service is billed to. schema.org PostalAddress and IEC 61968 ServiceLocation street address. Country is Canada and is omitted: province is ISO 3166-2:CA and postalCode is a Canada Post code. Not modeled: a separate unit, PO Box, or country property.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["houseNumber", "street", "city", "province", "postalCode"],
+      "properties": {
+        "houseNumber": {
+          "$ref": "#/$defs/CivicNumber",
+          "x-mapsTo": ["schema:PostalAddress.streetAddress", "CanadaPost:civic-number"]
+        },
+        "street": {
+          "$ref": "#/$defs/StreetLine",
+          "x-mapsTo": ["schema:PostalAddress.streetAddress", "CanadaPost:street"]
+        },
+        "city": {
+          "$ref": "#/$defs/Municipality",
+          "x-mapsTo": ["schema:PostalAddress.addressLocality"]
+        },
+        "province": {
+          "$ref": "#/$defs/CaProvinceCode",
+          "x-mapsTo": ["schema:PostalAddress.addressRegion", "iso3166-2:CA"]
+        },
+        "postalCode": {
+          "$ref": "#/$defs/CanadaPostalCode",
+          "x-mapsTo": ["schema:PostalAddress.postalCode"]
+        }
+      },
+      "examples": [
+        {
+          "houseNumber": "123",
+          "street": "Maple Avenue",
+          "city": "Toronto",
+          "province": "ON",
+          "postalCode": "M5V 2A1"
+        }
+      ]
+    },
+    "NonNegativeAmount": {
+      "title": "Non-negative money amount",
+      "description": "Decimal amount in the bill currency (ISO 4217). For CAD the scale is two minor units (cents). multipleOf 0.01 is omitted because binary JSON numbers cannot assert decimal scale reliably. Zero is allowed.",
+      "type": "number",
+      "minimum": 0,
+      "examples": [0, 86.4, 158.69]
+    },
+    "SignedAmount": {
+      "title": "Signed money amount",
+      "description": "Decimal amount in the bill currency. Negative means a credit. Positive means a debit. Same cent-scale note as NonNegativeAmount.",
+      "type": "number",
+      "examples": [-25.0, 0, 12.5]
+    },
+    "NonNegativeQuantity": {
+      "title": "Non-negative measured quantity",
+      "description": "Metered quantity. Unit is fixed by the property name (UCUM), not by a second field.",
+      "type": "number",
+      "minimum": 0,
+      "examples": [0, 12.4, 640.5]
+    },
+    "Count": {
+      "title": "Non-negative count",
+      "description": "Whole number used by the summary cards.",
+      "type": "integer",
+      "minimum": 0,
+      "examples": [0, 1, 12]
+    }
+  }
+}

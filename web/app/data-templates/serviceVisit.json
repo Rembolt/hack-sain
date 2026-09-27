@@ -1,0 +1,55 @@
+{
+  "visitId": "",
+  "accountId": "",
+  "complaintId": "",
+
+  "contractor": {
+    "contractorId": "",
+    "contractorName": "",
+    "engineerId": "",
+    "engineerName": ""
+  },
+
+  "serviceAddress": {
+    "houseNumber": "",
+    "street": "",
+    "city": "",
+    "province": "",
+    "postalCode": ""
+  },
+
+  "region": "",
+
+  "appointment": {
+    "scheduledDate": "",
+    "visitDate": "",
+    "arrivalTime": "",
+    "departureTime": ""
+  },
+
+  "work": {
+    "workType": "",
+    "outcome": "",
+    "systemId": "",
+    "description": "",
+    "followUpRequired": false,
+    "followUpDate": null
+  },
+
+  "meterRead": {
+    "meterId": "",
+    "readingType": "",
+    "waterM3": 0.0,
+    "electricityKWh": 0.0
+  },
+
+  "charges": {
+    "labourHours": 0.0,
+    "labourCharge": 0.0,
+    "partsCharge": 0.0,
+    "totalCharge": 0.0,
+    "currency": ""
+  },
+
+  "parts": []
+}

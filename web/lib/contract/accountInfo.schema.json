@@ -1,0 +1,246 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.hack-sain.invalid/contract/accountInfo.schema.json",
+  "title": "Account file",
+  "description": "Customer account shown on the account file, matching web/app/data-templates/accountInfo.json and the Account type in web/lib/account.ts. resources.billing and resources.complaints are arrays. The blank template's empty strings are placeholders and do not validate. Shared contract for the account page and for POST /api/accounts. The page imports it to show errors early. The route rejects a body that fails it.",
+  "x-scope": "shared-contract",
+  "x-template": "web/app/data-templates/accountInfo.json",
+  "x-standards": [
+    "JSON Schema 2020-12",
+    "schema.org Person and PostalAddress",
+    "IEC 61968 Customer and CustomerAccount",
+    "ISO 3166-2:CA",
+    "Canada Post civic address",
+    "ISO 4217 via nested bills"
+  ],
+  "x-frontend": {
+    "statusTone": {
+      "ACTIVE": "ok",
+      "PENDING": "ok",
+      "SUSPENDED": "alert",
+      "INACTIVE": "alert",
+      "CLOSED": "alert"
+    }
+  },
+  "x-invariants": [
+    "summary.totalBills equals resources.billing length.",
+    "summary.totalComplaints equals resources.complaints length.",
+    "summary.unpaidBills equals the number of bills whose status is not Paid.",
+    "summary.openComplaints equals the number of complaints whose status is Open.",
+    "summary.unpaidBills is less than or equal to summary.totalBills.",
+    "summary.openComplaints is less than or equal to summary.totalComplaints.",
+    "summary.outstandingBalance is the sum of amounts still owed on bills that are not Paid, in CAD."
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["accountId", "accountName", "clientInfo", "resources", "summary"],
+  "properties": {
+    "accountId": {
+      "$ref": "common.schema.json#/$defs/AccountId",
+      "x-mapsTo": ["IEC61968:CustomerAccount.mRID", "schema:identifier"]
+    },
+    "accountName": {
+      "title": "Account name",
+      "description": "Name in the account-file header. May match customerName for a household account.",
+      "$ref": "common.schema.json#/$defs/AccountLabel"
+    },
+    "clientInfo": {
+      "title": "Client",
+      "description": "Person and premise the screen lists under Client. schema.org Person plus the service PostalAddress. IEC 61968 Customer.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["customerName", "email", "phoneNumber", "serviceAddress", "accountStatus"],
+      "properties": {
+        "customerName": {
+          "$ref": "common.schema.json#/$defs/PersonName",
+          "x-mapsTo": ["schema:Person.name", "IEC61968:Customer.name"]
+        },
+        "email": {
+          "$ref": "common.schema.json#/$defs/EmailAddress",
+          "x-mapsTo": ["schema:email"]
+        },
+        "phoneNumber": {
+          "$ref": "common.schema.json#/$defs/PhoneNumber",
+          "x-mapsTo": ["schema:telephone", "ITU-T:E.164"]
+        },
+        "serviceAddress": {
+          "$ref": "common.schema.json#/$defs/ServiceAddress"
+        },
+        "accountStatus": {
+          "title": "Account status",
+          "description": "Status pill on the account file. Suspended, inactive, and closed use the alert tone.",
+          "$ref": "#/$defs/AccountStatus",
+          "x-mapsTo": ["IEC61968:CustomerAccount.status"]
+        }
+      }
+    },
+    "resources": {
+      "title": "Related records",
+      "description": "Bills and complaints embedded on the account file. Arrays, including empty arrays. This matches accountInfo.json and the Account type.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["billing", "complaints"],
+      "properties": {
+        "billing": {
+          "title": "Bills",
+          "type": "array",
+          "items": { "$ref": "bill.schema.json" }
+        },
+        "complaints": {
+          "title": "Complaints",
+          "type": "array",
+          "items": { "$ref": "complaint.schema.json" }
+        }
+      }
+    },
+    "summary": {
+      "title": "Summary",
+      "description": "Figures for the five summary cards. Derived from resources. The screen does not edit these.",
+      "type": "object",
+      "additionalProperties": false,
+      "readOnly": true,
+      "required": [
+        "outstandingBalance",
+        "totalBills",
+        "unpaidBills",
+        "totalComplaints",
+        "openComplaints"
+      ],
+      "properties": {
+        "outstandingBalance": {
+          "title": "Outstanding balance",
+          "description": "Amount still owed, shown as Outstanding. Canadian dollars. Zero when nothing is owed. Credits are expressed as negative adjustments on a bill, not as a negative balance here.",
+          "$ref": "common.schema.json#/$defs/NonNegativeAmount",
+          "readOnly": true
+        },
+        "totalBills": {
+          "title": "Bills on file",
+          "description": "Count of resources.billing.",
+          "$ref": "common.schema.json#/$defs/Count",
+          "readOnly": true
+        },
+        "unpaidBills": {
+          "title": "Unpaid bills",
+          "description": "Count of bills whose status is not Paid.",
+          "$ref": "common.schema.json#/$defs/Count",
+          "readOnly": true
+        },
+        "totalComplaints": {
+          "title": "Complaints",
+          "description": "Count of resources.complaints.",
+          "$ref": "common.schema.json#/$defs/Count",
+          "readOnly": true
+        },
+        "openComplaints": {
+          "title": "Open complaints",
+          "description": "Count of complaints whose status is Open.",
+          "$ref": "common.schema.json#/$defs/Count",
+          "readOnly": true
+        }
+      }
+    }
+  },
+  "$defs": {
+    "AccountStatus": {
+      "title": "Account status",
+      "oneOf": [
+        {
+          "const": "ACTIVE",
+          "description": "Service is on. Ok tone. Matches exampleData.json."
+        },
+        {
+          "const": "PENDING",
+          "description": "Opened and not yet active. Ok tone."
+        },
+        {
+          "const": "SUSPENDED",
+          "description": "Service is suspended. Alert tone. Matches exampleData.json."
+        },
+        {
+          "const": "INACTIVE",
+          "description": "Not in service. Alert tone."
+        },
+        {
+          "const": "CLOSED",
+          "description": "Account closed. Alert tone."
+        }
+      ]
+    }
+  },
+  "examples": [
+    {
+      "accountId": "ACC-100001",
+      "accountName": "John Smith",
+      "clientInfo": {
+        "customerName": "John Smith",
+        "email": "john.smith@email.com",
+        "phoneNumber": "+1-555-123-4567",
+        "serviceAddress": {
+          "houseNumber": "123",
+          "street": "Maple Avenue",
+          "city": "Toronto",
+          "province": "ON",
+          "postalCode": "M5V 2A1"
+        },
+        "accountStatus": "ACTIVE"
+      },
+      "resources": {
+        "billing": [
+          {
+            "billingId": "BILL-100001",
+            "billingPeriod": {
+              "startDate": "2024-10-01",
+              "endDate": "2024-10-31"
+            },
+            "usage": {
+              "waterM3": 12.4,
+              "electricityKWh": 640.5
+            },
+            "priceBreakdown": {
+              "waterCharge": 28.5,
+              "electricityCharge": 86.4,
+              "serviceFee": 15.0,
+              "adjustments": 0,
+              "tax": 16.92
+            },
+            "totalPrice": 146.82,
+            "currency": "CAD",
+            "status": "Unpaid",
+            "issuedDate": "2024-11-02",
+            "dueDate": "2024-11-23",
+            "paymentDate": null
+          }
+        ],
+        "complaints": [
+          {
+            "complaintId": "NW-100001",
+            "ticketNumber": "TKT-100001",
+            "reason": "Amount on the October bill is higher than expected",
+            "category": "Billing - disputed amount",
+            "description": "Customer disputes the October electricity charge and wants the estimated read checked.",
+            "priority": "Medium",
+            "status": "Open",
+            "assignedTo": {
+              "employeeId": "EMP-10042",
+              "employeeName": "Amina Rahman"
+            },
+            "createdDate": "2024-11-03",
+            "lastUpdatedDate": "2024-11-03",
+            "closedDate": null,
+            "resolution": {
+              "resolutionCode": "",
+              "resolutionDescription": ""
+            }
+          }
+        ]
+      },
+      "summary": {
+        "outstandingBalance": 146.82,
+        "totalBills": 1,
+        "unpaidBills": 1,
+        "totalComplaints": 1,
+        "openComplaints": 1
+      }
+    }
+  ]
+}

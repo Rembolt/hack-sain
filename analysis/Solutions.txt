@@ -1,9 +1,42 @@
 Main solutions:
 -Bill Estimation reinforcement through corrected bills into parameter model(household income, location, occupations, past usage, etc.)
+
 -AI insights (possible causes) of Excell visualiser map of account complaints, complaint type, systems involved, etc.
 (price of possible solutions)
+
+-Speed Transfer between systems
 
 Secondary solutions:
 AI chatbot for info problems??
 
+
  
+Rating solution->
+
+-complain rate increased ~37% as 2024
+-old meter and new meter estimation still have the same processing time
+-old files take longer to solve
+-Files with largest time to 
+-Avg. time of case solution increased 400%, 
+Probable causes:
+-Old Financial systems 
+-Meterhub estimation algorithm stale (no feedback loop for correction)* !!
+-CaseTrack Complaint Transfer (no data retention)* SOOO EXPENSIVE
+-Attrition rate "Caterfield" [same statistics as cities without attrition]
+-
+
+
+
+Ok, my team is having problems understanding exactly what we are working on, since each team is changing perspectives as time goes on.
+On what they are doing and what we actually need from them. 
+
+This company came up to us with their data that is sensitive, thay asked us to build them something that would solve their problem, but before we build it we noticed their data was messy and seemed to have an underlaying issue on why their problems is happen.
+
+We then decided to create a Analystics tool called NorthWind.
+A Chart Data Analyser that displays information in x different ways:
+
+1. Charts: the front went of the website takes the sheets and displays it in pie graphs and 2d comparison charts of single tables.
+2. Comparison charts: the website also compares other values, the user should be able to pick different values to compare to each other like:
+"number of new meters vs. percetage of meter realted complaints", there should be a vast selection of values.
+
+

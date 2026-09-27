@@ -1,0 +1,298 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://schemas.hack-sain.invalid/contract/complaint.schema.json",
+  "title": "Complaint",
+  "description": "One complaint on the account-file timeline, matching web/app/data-templates/complaint.json and the Complaint type in web/lib/account.ts. Blank template strings are placeholders and do not validate. Included by the account contract. POST /api/accounts checks each complaint against it.",
+  "x-scope": "shared-contract",
+  "x-template": "web/app/data-templates/complaint.json",
+  "x-standards": [
+    "JSON Schema 2020-12",
+    "ISO 10002:2018 complaints handling (record, category, status, dates, resolution)",
+    "ITIL 4 incident priority (P1 most severe through P3)",
+    "ISO 8601 dates"
+  ],
+  "x-frontend": {
+    "openFilter": "status Open is the open segment. Closed and Closed - reopened are the closed segment.",
+    "badgeTone": {
+      "Open": "red",
+      "Closed": "teal",
+      "Closed - reopened": "gray until the screen recognizes this phrase",
+      "High": "red",
+      "Medium": "orange",
+      "Low": "teal"
+    }
+  },
+  "x-notOnScreen": [
+    "The complaints extract also has channel, region, source system, SLA, transfer, and bill-correction value. Those fields are not on complaint.json and are not part of this schema."
+  ],
+  "x-invariants": [
+    "lastUpdatedDate is on or after createdDate.",
+    "When closedDate is a date, it is on or after createdDate.",
+    "Open complaints have closedDate null and an empty resolution.",
+    "Closed and Closed - reopened complaints have a closedDate and a resolution code."
+  ],
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "complaintId",
+    "ticketNumber",
+    "reason",
+    "category",
+    "description",
+    "priority",
+    "status",
+    "assignedTo",
+    "createdDate",
+    "lastUpdatedDate",
+    "closedDate",
+    "resolution"
+  ],
+  "properties": {
+    "complaintId": {
+      "$ref": "common.schema.json#/$defs/ComplaintId",
+      "x-mapsTo": ["iso10002:complaint-record-id"]
+    },
+    "ticketNumber": {
+      "$ref": "common.schema.json#/$defs/TicketNumber"
+    },
+    "reason": {
+      "title": "Reason",
+      "description": "Short line shown as the timeline title. ISO 10002 complaint summary. Not the category code and not the full narrative.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 180,
+      "examples": ["Amount on the October bill is higher than expected"]
+    },
+    "category": {
+      "title": "Category",
+      "description": "ISO 10002 complaint category. Controlled list taken from the Northwind complaints extract so the category line on the timeline matches the source vocabulary.",
+      "$ref": "#/$defs/ComplaintCategory"
+    },
+    "description": {
+      "title": "Description",
+      "description": "Customer narrative shown under the timeline title. Required for open and closed complaints.",
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "priority": {
+      "title": "Priority",
+      "description": "Badge value on the timeline. High, Medium, and Low are the words the screen colors. Contact-centre codes map as P1 → High, P2 → Medium, P3 → Low (ITIL-style, P1 most severe).",
+      "$ref": "#/$defs/ComplaintPriority"
+    },
+    "status": {
+      "title": "Status",
+      "description": "Lifecycle state. ISO 10002 complaint status. Open has no close date. Closed and Closed - reopened both have a close date and a resolution; the third value is the extract status for a case that was reopened and then closed again.",
+      "$ref": "#/$defs/ComplaintStatus"
+    },
+    "assignedTo": {
+      "title": "Assignee",
+      "description": "Agent shown on the complaint. ISO 10002 tracking of who is handling the complaint.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["employeeId", "employeeName"],
+      "properties": {
+        "employeeId": { "$ref": "common.schema.json#/$defs/EmployeeId" },
+        "employeeName": {
+          "$ref": "common.schema.json#/$defs/PersonName",
+          "x-mapsTo": ["schema:Person.name"]
+        }
+      }
+    },
+    "createdDate": {
+      "title": "Opened date",
+      "description": "Date the complaint was opened. ISO 8601 calendar date. Shown as Opened on the timeline.",
+      "$ref": "common.schema.json#/$defs/IsoDate"
+    },
+    "lastUpdatedDate": {
+      "title": "Last updated",
+      "description": "Date the complaint record last changed. On or after createdDate.",
+      "$ref": "common.schema.json#/$defs/IsoDate"
+    },
+    "closedDate": {
+      "title": "Closed date",
+      "description": "Date the complaint was closed, or null while it is open. The template uses null, not an empty string.",
+      "$ref": "common.schema.json#/$defs/NullableIsoDate"
+    },
+    "resolution": {
+      "title": "Resolution",
+      "description": "ISO 10002 resolution. Empty strings while the complaint is open. A code plus a customer-facing note once it is closed.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["resolutionCode", "resolutionDescription"],
+      "properties": {
+        "resolutionCode": {
+          "title": "Resolution code",
+          "description": "Empty string while open. Otherwise a closed-resolution code.",
+          "oneOf": [
+            { "const": "" },
+            { "$ref": "#/$defs/ClosedResolutionCode" }
+          ]
+        },
+        "resolutionDescription": {
+          "title": "Resolution note",
+          "description": "Empty string while open. Otherwise the note shown on the timeline, up to 2000 characters.",
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": { "status": { "const": "Open" } },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "closedDate": { "type": "null" },
+          "resolution": {
+            "properties": {
+              "resolutionCode": { "const": "" },
+              "resolutionDescription": { "const": "" }
+            }
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": { "enum": ["Closed", "Closed - reopened"] }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "properties": {
+          "closedDate": { "$ref": "common.schema.json#/$defs/IsoDate" },
+          "resolution": {
+            "properties": {
+              "resolutionCode": { "$ref": "#/$defs/ClosedResolutionCode" },
+              "resolutionDescription": { "type": "string", "minLength": 1, "maxLength": 2000 }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "ComplaintPriority": {
+      "title": "Complaint priority",
+      "oneOf": [
+        {
+          "const": "High",
+          "description": "Source code P1. Red badge."
+        },
+        {
+          "const": "Medium",
+          "description": "Source code P2. Orange badge."
+        },
+        {
+          "const": "Low",
+          "description": "Source code P3. Teal badge."
+        }
+      ]
+    },
+    "ComplaintStatus": {
+      "title": "Complaint status",
+      "oneOf": [
+        {
+          "const": "Open",
+          "description": "Still being handled. closedDate is null and resolution is empty. Red badge, open filter."
+        },
+        {
+          "const": "Closed",
+          "description": "Closed without a later reopen. Teal badge, closed filter."
+        },
+        {
+          "const": "Closed - reopened",
+          "description": "Closed, and the case had been reopened before that close. Matches the extract status. Closed filter. The badge is gray until the screen lists this phrase."
+        }
+      ]
+    },
+    "ComplaintCategory": {
+      "title": "Complaint category",
+      "description": "Categories present on the Northwind complaints extract.",
+      "oneOf": [
+        { "const": "Billing - disputed amount" },
+        { "const": "Billing - estimated read" },
+        { "const": "Metering - no read taken" },
+        { "const": "Supply - interruption" },
+        { "const": "Service - poor communication" },
+        { "const": "Service - missed appointment" },
+        { "const": "Payment - plan or arrears" },
+        { "const": "Water - pressure or quality" },
+        { "const": "Other" }
+      ]
+    },
+    "ClosedResolutionCode": {
+      "title": "Closed resolution code",
+      "description": "Stable code for a completed complaint. The source extract stores the matching sentence in resolution_action; put that sentence, or a more specific note, in resolutionDescription.",
+      "oneOf": [
+        {
+          "const": "BILL_CORRECTED_REISSUED",
+          "description": "Bill corrected and re-issued."
+        },
+        {
+          "const": "INFORMATION_PROVIDED",
+          "description": "Information provided only."
+        },
+        {
+          "const": "METER_VISIT_REQUIRED",
+          "description": "Meter visit required."
+        },
+        {
+          "const": "FIELD_REPAIR_REQUIRED",
+          "description": "Field repair required."
+        },
+        {
+          "const": "REFUND_OR_CREDIT",
+          "description": "Refund or credit applied."
+        },
+        {
+          "const": "PAYMENT_PLAN_AMENDED",
+          "description": "Payment plan amended."
+        },
+        {
+          "const": "APPOINTMENT_REBOOKED",
+          "description": "Appointment rebooked by agent."
+        },
+        {
+          "const": "EXPLAINED_NO_ACTION",
+          "description": "No action — explained to customer."
+        },
+        {
+          "const": "APOLOGY_PROCESS_FIX",
+          "description": "Apology and manual process fix."
+        },
+        {
+          "const": "COMPENSATION_ISSUED",
+          "description": "Compensation payment issued."
+        }
+      ]
+    }
+  },
+  "examples": [
+    {
+      "complaintId": "NW-100001",
+      "ticketNumber": "TKT-100001",
+      "reason": "Amount on the October bill is higher than expected",
+      "category": "Billing - disputed amount",
+      "description": "Customer disputes the October electricity charge and wants the estimated read checked.",
+      "priority": "Medium",
+      "status": "Open",
+      "assignedTo": {
+        "employeeId": "EMP-10042",
+        "employeeName": "Amina Rahman"
+      },
+      "createdDate": "2024-11-03",
+      "lastUpdatedDate": "2024-11-03",
+      "closedDate": null,
+      "resolution": {
+        "resolutionCode": "",
+        "resolutionDescription": ""
+      }
+    }
+  ]
+}
