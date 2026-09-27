@@ -7,13 +7,14 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { cookies } from "next/headers";
 import { findAdmin, type Admin } from "./admin";
+import { isFormSlug, type FormSlug } from "./form-link";
 
 const SESSION_COOKIE = "hack-sain-admin";
 const FORM_COOKIE = "hack-sain-form-pass";
 const SESSION_MS = 8 * 60 * 60 * 1000;
 const FORM_MS = 15 * 60 * 1000;
 
-type Ticket = { email: string; until: number };
+type Ticket = { email: string; until: number; form?: string };
 
 function secret() {
   return process.env.SESSION_SECRET ?? "hack-sain-dev-secret";
@@ -38,6 +39,7 @@ function open(token: string | undefined): Ticket | null {
   try {
     const ticket = JSON.parse(Buffer.from(body, "base64url").toString()) as Ticket;
     if (typeof ticket.email !== "string" || typeof ticket.until !== "number") return null;
+    if (ticket.form !== undefined && !isFormSlug(ticket.form)) return null;
     if (ticket.until < Date.now()) return null;
     return ticket;
   } catch {
@@ -45,10 +47,12 @@ function open(token: string | undefined): Ticket | null {
   }
 }
 
-async function put(name: string, email: string, life: number) {
+async function put(name: string, email: string, life: number, form?: FormSlug) {
   const until = Date.now() + life;
+  const ticket: Ticket = { email: email.toLowerCase(), until };
+  if (form) ticket.form = form;
   const jar = await cookies();
-  jar.set(name, seal({ email: email.toLowerCase(), until }), {
+  jar.set(name, seal(ticket), {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",
@@ -74,12 +78,18 @@ export async function readAdmin(): Promise<Admin | null> {
   return ticket ? await findAdmin(ticket.email) : null;
 }
 
-export async function passForm(email: string) {
-  await put(FORM_COOKIE, email, FORM_MS);
+/** A form pass with no slug opens every form. A slug opens only that form. */
+export async function passForm(email: string, form?: FormSlug) {
+  await put(FORM_COOKIE, email, FORM_MS, form);
+}
+
+export async function formGrant(email: string): Promise<"*" | FormSlug | null> {
+  const jar = await cookies();
+  const ticket = open(jar.get(FORM_COOKIE)?.value);
+  if (!ticket || ticket.email !== email.toLowerCase()) return null;
+  return ticket.form && isFormSlug(ticket.form) ? ticket.form : "*";
 }
 
 export async function formPassed(email: string) {
-  const jar = await cookies();
-  const ticket = open(jar.get(FORM_COOKIE)?.value);
-  return ticket?.email === email.toLowerCase();
+  return (await formGrant(email)) !== null;
 }

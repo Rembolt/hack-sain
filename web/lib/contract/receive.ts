@@ -1,3 +1,4 @@
+import { formGrant, readAdmin } from "@/lib/session";
 import { unifiedFetch } from "@/lib/unified-client";
 import { issuesFor, type ContractKind } from "./validate";
 
@@ -17,6 +18,15 @@ function failureMessage(body: unknown) {
 
 /** Reads a posted record, checks the schema, and stores it in the unified database. */
 export async function receiveRecord(request: Request, kind: ContractKind) {
+  const admin = await readAdmin();
+  if (!admin) {
+    return Response.json({ message: "Not signed in." }, { status: 401 });
+  }
+  const grant = await formGrant(admin.email);
+  if (!grant || (grant !== "*" && grant !== kind)) {
+    return Response.json({ message: "This form is not open." }, { status: 403 });
+  }
+
   let body: unknown;
   try {
     body = await request.json();

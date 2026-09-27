@@ -6,7 +6,6 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 import { accountIssues, type SchemaIssue } from "@/lib/contract/validate";
 import { toAccountSheet, type AccountSheetModel, type SheetCell } from "@/lib/contract/account-sheet";
 import { matchesList, yearsIn } from "@/lib/list-filter";
-import { TEMPORARY_PREVIEW_ID, temporaryAccountPreview } from "@/lib/temporary-account-preview";
 import { ListTools } from "./list-tools";
 import classes from "./search.module.css";
 
@@ -17,20 +16,13 @@ function accountUrl(id: string) {
   return apiBase ? `${apiBase}${path}` : `/api${path}`;
 }
 
-const temporaryPreview = temporaryAccountPreview(TEMPORARY_PREVIEW_ID);
-
 export function SearchDesk({ initialId = "" }: { initialId?: string }) {
-  const startId = initialId.trim() || TEMPORARY_PREVIEW_ID;
+  const startId = initialId.trim();
   const [accountId, setAccountId] = useState(startId);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const preview = !initialId.trim() ? temporaryPreview : null;
-  const [issues, setIssues] = useState<SchemaIssue[]>(() =>
-    preview ? accountIssues(preview) : [],
-  );
-  const [sheet, setSheet] = useState<AccountSheetModel | null>(() =>
-    preview ? toAccountSheet(preview) : null,
-  );
+  const [issues, setIssues] = useState<SchemaIssue[]>([]);
+  const [sheet, setSheet] = useState<AccountSheetModel | null>(null);
   const [sheetKey, setSheetKey] = useState(0);
 
   async function loadAccount(id: string) {

@@ -30,7 +30,7 @@ export const theme = createTheme({
   fontSizes: { md: "1rem" },
   headings: {
     fontFamily: "var(--font-source), sans-serif",
-    fontWeight: "300",
+    fontWeight: "200",
   },
   defaultRadius: "sm",
   radius: {

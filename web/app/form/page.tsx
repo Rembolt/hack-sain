@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { formCatalog } from "@/lib/contract/record-form";
+import { guardForm } from "@/lib/form-access";
 import sheet from "../search/search.module.css";
 import classes from "./form.module.css";
 
@@ -8,7 +9,8 @@ export const metadata: Metadata = {
   title: "Forms",
 };
 
-export default function FormIndexPage() {
+export default async function FormIndexPage() {
+  await guardForm(null);
   return (
     <main className={sheet.page}>
       <div className={sheet.column}>

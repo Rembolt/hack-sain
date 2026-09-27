@@ -40,7 +40,13 @@ function readIssues(body: unknown): SchemaIssue[] | null {
   });
 }
 
-export function FormDesk() {
+export function FormDesk({
+  backHref = "/form",
+  backLabel = "All forms",
+}: {
+  backHref?: string;
+  backLabel?: string;
+}) {
   const [draft, setDraft] = useState<AccountDraft>(emptyDraft);
   const [sent, setSent] = useState<SchemaIssue[]>([]);
   const [touched, setTouched] = useState<Record<string, true>>({});
@@ -171,7 +177,7 @@ export function FormDesk() {
     <main className={sheet.page}>
       <div className={sheet.column}>
         <p className={classes.back}>
-          <Link href="/form">All forms</Link>
+          <Link href={backHref}>{backLabel}</Link>
         </p>
         <form aria-label={accountForm.title} autoComplete="off" noValidate onSubmit={onSubmit}>
           {pending ? (

@@ -1,20 +1,25 @@
-import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import Link from "next/link";
-import { Brand } from "./brand";
-import { readAdmin } from "@/lib/session";
+import classes from "./landing.module.css";
 
-export default async function Home() {
-  if (await readAdmin()) redirect("/home");
+export const metadata: Metadata = {
+  title: { absolute: "NorthFlow" },
+};
 
+export default function Home() {
   return (
-    <main className="home">
-      <div className="home-lead">
-        <Brand kind="lockup" size={56} href={null} className="brand-lockup" />
-        <h1>hack-sain</h1>
-      </div>
-      <p>
-        <Link href="/account/login">Sign in</Link>
-      </p>
+    <main className={classes.page}>
+      <h1 className={classes.name}>
+        <svg viewBox="0 0 1000 220" role="img">
+          <title>NorthFlow</title>
+          <text x="90" y="176" textLength="820" lengthAdjust="spacing">
+            NorthFlow
+          </text>
+        </svg>
+      </h1>
+      <Link className={classes.start} href="/account/login">
+        Start
+      </Link>
     </main>
   );
 }

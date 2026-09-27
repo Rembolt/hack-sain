@@ -245,7 +245,7 @@
 
 .bandTitle {
   font-size: 0.66rem;
-  font-weight: 300;
+  font-weight: 200;
   letter-spacing: 0.12em;
   text-transform: uppercase;
   background: var(--mark);

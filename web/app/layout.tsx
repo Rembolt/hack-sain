@@ -2,12 +2,16 @@ import "@mantine/core/styles.layer.css";
 import type { Metadata } from "next";
 import { ColorSchemeScript, MantineProvider, mantineHtmlProps } from "@mantine/core";
 import { Brand } from "./brand";
+import { Particles } from "./particles";
 import { SchemeSwitch } from "./scheme-switch";
 import { theme } from "@/lib/theme";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "hack-sain",
+  title: {
+    default: "NorthFlow",
+    template: "%s · NorthFlow",
+  },
   icons: {
     icon: [
       { url: "/north-arrow-logo/svg/favicon-adaptive.svg", type: "image/svg+xml" },
@@ -27,18 +31,21 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
         <link
-          href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300&display=swap"
+          href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@200;300&display=swap"
           rel="stylesheet"
         />
         <script dangerouslySetInnerHTML={{ __html: schemeBoot }} />
       </head>
       <body>
         <MantineProvider theme={theme} forceColorScheme="light">
-          <header className="site-bar">
-            <Brand size={32} priority />
-            <SchemeSwitch />
-          </header>
-          {children}
+          <Particles />
+          <div className="app-shell">
+            <header className="site-bar">
+              <Brand size={32} priority />
+              <SchemeSwitch />
+            </header>
+            {children}
+          </div>
         </MantineProvider>
       </body>
     </html>

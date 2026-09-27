@@ -1,0 +1,902 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Northwind evidence slides</title>
+<style>
+  :root {
+    --ink: #0c3140;
+    --paper: #ffffff;
+    --red: #b91c1c;
+    --blue: #1d4ed8;
+    --glow: #237a94;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; width: 100%; background: var(--paper); color: var(--ink); }
+  body { font-family: "Segoe UI", Aptos, system-ui, sans-serif; font-weight: 400; overflow: hidden; color: var(--ink); }
+  .slide {
+    display: none;
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    padding: 36px 88px 28px;
+    flex-direction: column;
+    background: var(--paper);
+    overflow: hidden;
+  }
+  .slide.on { display: flex; }
+  .slide > * { min-width: 0; max-width: 100%; }
+  .slide.scroll { padding: 0; }
+  .slide.scroll.on { display: block; overflow: auto; scroll-snap-type: y mandatory; }
+  h1 {
+    margin: 0 0 14px;
+    font-size: clamp(32px, 3.6vw, 52px);
+    font-weight: 300;
+    letter-spacing: -0.03em;
+    line-height: 1.12;
+  }
+  .key {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 32px;
+    margin: 0 0 8px;
+    font-size: clamp(18px, 2vw, 26px);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+  .key .red { color: var(--red); }
+  .key .blue { color: var(--blue); }
+  .chart { flex: 1; min-height: 0; min-width: 0; width: 100%; }
+  .chart svg { width: 100%; height: 100%; display: block; }
+  .pair {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 36px;
+  }
+  .panel { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+  .panel h1 { font-size: clamp(24px, 2.2vw, 34px); }
+  .block {
+    height: 100%;
+    scroll-snap-align: start;
+    display: flex;
+    flex-direction: column;
+    padding: 36px 88px 28px;
+  }
+  .nav {
+    position: fixed;
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 5;
+    width: 46px;
+    height: 46px;
+    border: 1px solid var(--ink);
+    border-radius: 8px;
+    background: #fff;
+    color: var(--ink);
+    font-size: 26px;
+    line-height: 1;
+    cursor: pointer;
+  }
+  .nav:disabled { opacity: 0.35; cursor: default; }
+  .nav.prev { left: 16px; }
+  .nav.next { right: 16px; }
+  .corner-mark { position: fixed; top: 16px; left: 18px; z-index: 4; width: 36px; height: 36px; }
+  .corner-mark svg { width: 100%; height: 100%; display: block; }
+  .diagram { flex: 1; min-height: 0; width: 100%; }
+  .diagram text { font-family: "Segoe UI", Aptos, system-ui, sans-serif; }
+  .meet { flex: 1; min-height: 0; display: flex; align-items: center; justify-content: center; }
+  .meet svg { width: min(42vh, 320px); height: auto; }
+  .key .ink { color: var(--ink); }
+  .stack {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 28px;
+  }
+  .stack h1 { margin: 0; }
+  .figure {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    text-align: center;
+  }
+  .figure strong {
+    font-size: clamp(72px, 12vw, 140px);
+    font-weight: 300;
+    letter-spacing: -0.04em;
+    line-height: 0.95;
+  }
+  .figure p { margin: 0; font-size: clamp(22px, 2.4vw, 32px); font-weight: 300; }
+  .sum {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: clamp(16px, 3vw, 48px);
+    text-align: center;
+  }
+  .sum b {
+    display: block;
+    font-size: clamp(40px, 6vw, 84px);
+    font-weight: 300;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+  .sum small { display: block; margin-top: 8px; font-size: 20px; font-weight: 400; }
+  .sum i { font-style: normal; font-size: clamp(36px, 5vw, 64px); font-weight: 300; }
+  .profit { opacity: 0; }
+  .slide.on .profit { animation: show-profit 0.7s ease 0.55s forwards; }
+  @keyframes show-profit { to { opacity: 1; } }
+  @media (prefers-reduced-motion: reduce) {
+    .profit { opacity: 1; }
+    .slide.on .profit { animation: none; }
+  }
+  .trio {
+    flex: 1;
+    min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 28px;
+  }
+  .pair.tall { align-items: stretch; }
+  .card {
+    border: 1px solid var(--ink);
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    padding: 20px;
+    text-align: center;
+    min-height: 0;
+  }
+  .card h2 { margin: 0; font-size: clamp(22px, 2vw, 30px); font-weight: 300; }
+  .card svg { width: min(100%, 220px); height: auto; }
+  .sim {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    align-items: center;
+    text-align: center;
+  }
+  .sim b {
+    display: block;
+    font-size: clamp(48px, 7vw, 92px);
+    font-weight: 300;
+    letter-spacing: -0.04em;
+    line-height: 1;
+  }
+  .sim small { display: block; margin-top: 8px; font-size: 18px; }
+  .sim-month { margin: 0 0 8px; text-align: center; font-size: 22px; font-weight: 300; }
+  .ticks { display: flex; gap: 8px; justify-content: center; margin: 0 0 28px; }
+  .ticks i { width: 36px; height: 6px; background: #d7e4ea; display: block; }
+  .ticks i.on { background: #0c3140; }
+  .lane {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1.2fr 1fr;
+    align-items: center;
+    gap: 18px;
+    position: relative;
+  }
+  .lane .node {
+    border: 1px solid #0c3140;
+    border-radius: 8px;
+    padding: 28px 16px;
+    text-align: center;
+    font-size: clamp(22px, 2.4vw, 32px);
+    font-weight: 300;
+    background: #fff;
+    z-index: 1;
+  }
+  .lane .node.fill { background: #0c3140; color: #fff; }
+  .slots { display: flex; gap: 8px; justify-content: center; margin-top: 16px; }
+  .slots i { width: 22px; height: 22px; border: 1px solid #8ed0e4; display: block; }
+  .slots i.on { background: #8ed0e4; }
+  .mover {
+    position: absolute;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #b91c1c;
+    top: calc(50% - 9px);
+    left: 8%;
+    z-index: 2;
+  }
+</style>
+</head>
+<body>
+<button class="nav prev" id="prev" aria-label="Previous slide">‹</button>
+<button class="nav next" id="next" aria-label="Next slide">›</button>
+<div class="corner-mark" aria-hidden="true">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200">
+    <defs><clipPath id="arrowClip"><polygon points="100,24 138,106 112,106 112,170 88,170 88,106 62,106"/></clipPath></defs>
+    <g clip-path="url(#arrowClip)">
+      <path d="M0,44 Q12.5,39 25,44 T50,44 T75,44 T100,44 T125,44 T150,44 T175,44 T200,44" fill="none" stroke="#0C3140" stroke-width="10" stroke-linecap="round"/>
+      <path d="M0,68 Q12.5,62.5 25,68 T50,68 T75,68 T100,68 T125,68 T150,68 T175,68 T200,68" fill="none" stroke="#0C3140" stroke-width="10" stroke-linecap="round"/>
+      <path d="M0,92 Q12.5,86 25,92 T50,92 T75,92 T100,92 T125,92 T150,92 T175,92 T200,92" fill="none" stroke="#0C3140" stroke-width="10" stroke-linecap="round"/>
+      <path d="M0,116 Q12.5,110 25,116 T50,116 T75,116 T100,116 T125,116 T150,116 T175,116 T200,116" fill="none" stroke="#0C3140" stroke-width="10" stroke-linecap="round"/>
+      <path d="M0,140 Q12.5,133.5 25,140 T50,140 T75,140 T100,140 T125,140 T150,140 T175,140 T200,140" fill="none" stroke="#0C3140" stroke-width="10" stroke-linecap="round"/>
+      <path d="M0,164 Q12.5,157.5 25,164 T50,164 T75,164 T100,164 T125,164 T150,164 T175,164 T200,164" fill="none" stroke="#0C3140" stroke-width="10" stroke-linecap="round"/>
+    </g>
+  </svg>
+</div>
+
+<section class="slide on">
+  <h1>Robot helper chats vs complaints after a chat</h1>
+  <div class="key"><span class="red">RED: Robot helper chats</span><span class="blue">BLUE: Complaints after a chat</span></div>
+  <div class="chart" id="c-ai"></div>
+</section>
+
+<section class="slide">
+  <h1>Solution vs triaged tier</h1>
+  <div class="key"><span class="red">RED: Triaged tier</span><span class="blue">BLUE: Solution</span></div>
+  <div class="chart" id="c-triage"></div>
+</section>
+
+<section class="slide">
+  <div class="pair">
+    <div class="panel">
+      <h1>Guessed bills: old meter computer vs smart meters</h1>
+      <div class="key"><span class="red">RED: Old meter computer</span><span class="blue">BLUE: Smart meters</span></div>
+      <div class="chart" id="c-est"></div>
+    </div>
+    <div class="panel">
+      <h1>Complaints: old meter computer vs smart meters</h1>
+      <div class="key"><span class="red">RED: Old meter computer</span><span class="blue">BLUE: Smart meters</span></div>
+      <div class="chart" id="c-crate"></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <div class="pair">
+    <div class="panel">
+      <h1>Calderfield workers quitting vs complaints each worker gets</h1>
+      <div class="key"><span class="red">RED: Workers quitting</span><span class="blue">BLUE: Complaints each worker gets</span></div>
+      <div class="chart" id="c-attr"></div>
+    </div>
+    <div class="panel">
+      <h1>Complaints each worker gets: Calderfield vs other cities</h1>
+      <div class="key"><span class="red">RED: Calderfield</span><span class="blue">BLUE: Other cities</span></div>
+      <div class="chart" id="c-lift"></div>
+    </div>
+  </div>
+</section>
+
+<section class="slide scroll">
+  <div class="block">
+    <h1>New complaints vs the customer happiness score</h1>
+    <div class="key"><span class="red">RED: New complaints</span><span class="blue">BLUE: Happiness score</span></div>
+    <div class="chart" id="c-kpi"></div>
+  </div>
+  <div class="block">
+    <h1>Unfinished complaint pile vs new complaints</h1>
+    <div class="key"><span class="red">RED: Unfinished pile</span><span class="blue">BLUE: New complaints</span></div>
+    <div class="chart" id="c-back"></div>
+  </div>
+  <div class="block">
+    <h1>Complaints opened again vs the unfinished pile</h1>
+    <div class="key"><span class="red">RED: Opened again</span><span class="blue">BLUE: Unfinished pile</span></div>
+    <div class="chart" id="c-re"></div>
+  </div>
+  <div class="block">
+    <h1>Complaints passed between systems vs opened again</h1>
+    <div class="key"><span class="red">RED: Passed between computers</span><span class="blue">BLUE: Opened again</span></div>
+    <div class="chart" id="c-xfer"></div>
+  </div>
+  <div class="block">
+    <h1>Days to finish vs missed time promise</h1>
+    <div class="key"><span class="red">RED: Days to finish</span><span class="blue">BLUE: Missed the time promise</span></div>
+    <div class="chart" id="c-days"></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h1>Who talks to who</h1>
+  <div class="key"><span class="red">RED: Next night</span><span class="blue">BLUE: During the call</span><span class="ink">DARK: By hand</span></div>
+  <svg class="diagram" viewBox="0 0 1200 640" role="img">
+    <line x1="600" y1="118" x2="600" y2="250" stroke="#0c3140" stroke-width="2"/>
+    <line x1="175" y1="90" x2="560" y2="300" stroke="#b91c1c" stroke-width="2"/>
+    <line x1="175" y1="220" x2="540" y2="310" stroke="#b91c1c" stroke-width="2"/>
+    <line x1="175" y1="350" x2="540" y2="330" stroke="#b91c1c" stroke-width="2"/>
+    <line x1="175" y1="480" x2="560" y2="350" stroke="#b91c1c" stroke-width="2"/>
+    <line x1="1025" y1="90" x2="680" y2="290" stroke="#1d4ed8" stroke-width="2"/>
+    <line x1="1025" y1="220" x2="700" y2="310" stroke="#1d4ed8" stroke-width="2"/>
+    <line x1="1025" y1="350" x2="700" y2="330" stroke="#1d4ed8" stroke-width="2"/>
+    <line x1="1025" y1="480" x2="680" y2="350" stroke="#1d4ed8" stroke-width="2"/>
+    <line x1="600" y1="390" x2="600" y2="520" stroke="#0c3140" stroke-width="2"/>
+    <rect x="470" y="40" width="260" height="70" rx="8" fill="#fff" stroke="#0c3140"/>
+    <text x="600" y="72" text-anchor="middle" font-size="22">Customer</text>
+    <text x="600" y="96" text-anchor="middle" font-size="14">On the phone</text>
+    <rect x="470" y="268" width="260" height="78" rx="8" fill="#0c3140"/>
+    <text x="600" y="314" text-anchor="middle" font-size="22" fill="#fff">Person on the phone</text>
+    <rect x="40" y="55" width="270" height="70" rx="8" fill="#fff" stroke="#b91c1c"/>
+    <text x="175" y="85" text-anchor="middle" font-size="22" fill="#b91c1c">Bills</text>
+    <text x="175" y="108" text-anchor="middle" font-size="14" fill="#b91c1c">Aurora</text>
+    <rect x="40" y="185" width="270" height="70" rx="8" fill="#fff" stroke="#b91c1c"/>
+    <text x="175" y="215" text-anchor="middle" font-size="22" fill="#b91c1c">Customer file</text>
+    <text x="175" y="238" text-anchor="middle" font-size="14" fill="#b91c1c">Helix</text>
+    <rect x="40" y="315" width="270" height="70" rx="8" fill="#fff" stroke="#b91c1c"/>
+    <text x="175" y="345" text-anchor="middle" font-size="22" fill="#b91c1c">Meter guesses</text>
+    <text x="175" y="368" text-anchor="middle" font-size="14" fill="#b91c1c">MeterHub</text>
+    <rect x="40" y="445" width="270" height="70" rx="8" fill="#fff" stroke="#b91c1c"/>
+    <text x="175" y="475" text-anchor="middle" font-size="22" fill="#b91c1c">Complaint folder</text>
+    <text x="175" y="498" text-anchor="middle" font-size="14" fill="#b91c1c">CaseTrack</text>
+    <rect x="890" y="55" width="270" height="70" rx="8" fill="#fff" stroke="#1d4ed8"/>
+    <text x="1025" y="85" text-anchor="middle" font-size="22" fill="#1d4ed8">Website</text>
+    <text x="1025" y="108" text-anchor="middle" font-size="14" fill="#1d4ed8">Connect</text>
+    <rect x="890" y="185" width="270" height="70" rx="8" fill="#fff" stroke="#1d4ed8"/>
+    <text x="1025" y="215" text-anchor="middle" font-size="22" fill="#1d4ed8">Smart meters</text>
+    <text x="1025" y="238" text-anchor="middle" font-size="14" fill="#1d4ed8">SmartRead</text>
+    <rect x="890" y="315" width="270" height="70" rx="8" fill="#fff" stroke="#1d4ed8"/>
+    <text x="1025" y="345" text-anchor="middle" font-size="22" fill="#1d4ed8">Field van</text>
+    <text x="1025" y="368" text-anchor="middle" font-size="14" fill="#1d4ed8">FieldForce</text>
+    <rect x="890" y="445" width="270" height="70" rx="8" fill="#fff" stroke="#1d4ed8"/>
+    <text x="1025" y="475" text-anchor="middle" font-size="22" fill="#1d4ed8">Phone desk</text>
+    <text x="1025" y="498" text-anchor="middle" font-size="14" fill="#1d4ed8">CallCentre</text>
+    <rect x="465" y="530" width="270" height="70" rx="8" fill="#fff" stroke="#0c3140"/>
+    <text x="600" y="560" text-anchor="middle" font-size="22">Old letters</text>
+    <text x="600" y="583" text-anchor="middle" font-size="14">DocVault</text>
+  </svg>
+</section>
+
+<section class="slide scroll">
+  <div class="block">
+    <h1>Finding an old letter while the customer waits</h1>
+    <div class="key"><span class="red">RED: Minutes to fetch the letter</span></div>
+    <svg class="diagram" viewBox="0 0 1000 360" role="img">
+      <line x1="80" y1="170" x2="920" y2="170" stroke="#d7e4ea" stroke-width="8" stroke-linecap="round"/>
+      <line x1="500" y1="170" x2="920" y2="170" stroke="#b91c1c" stroke-width="8" stroke-linecap="round"/>
+      <text x="80" y="220" text-anchor="middle" font-size="22">0</text>
+      <text x="500" y="220" text-anchor="middle" font-size="22">2 min</text>
+      <text x="920" y="220" text-anchor="middle" font-size="22">4 min</text>
+    </svg>
+  </div>
+  <div class="block">
+    <h1>Bills, meter guesses, and the customer file wait one night</h1>
+    <div class="key"><span class="red">RED: A different kind of computer</span></div>
+    <svg class="diagram" viewBox="0 0 1100 420" role="img">
+      <line x1="180" y1="150" x2="550" y2="300" stroke="#b91c1c" stroke-width="2"/>
+      <line x1="550" y1="150" x2="550" y2="280" stroke="#b91c1c" stroke-width="2"/>
+      <line x1="920" y1="150" x2="550" y2="300" stroke="#b91c1c" stroke-width="2"/>
+      <rect x="50" y="70" width="260" height="90" rx="8" fill="#fff" stroke="#b91c1c"/>
+      <text x="180" y="108" text-anchor="middle" font-size="22" fill="#b91c1c">Bills</text>
+      <text x="180" y="136" text-anchor="middle" font-size="16" fill="#b91c1c">DB2</text>
+      <rect x="420" y="70" width="260" height="90" rx="8" fill="#fff" stroke="#b91c1c"/>
+      <text x="550" y="108" text-anchor="middle" font-size="22" fill="#b91c1c">Customer file</text>
+      <text x="550" y="136" text-anchor="middle" font-size="16" fill="#b91c1c">Oracle</text>
+      <rect x="790" y="70" width="260" height="90" rx="8" fill="#fff" stroke="#b91c1c"/>
+      <text x="920" y="108" text-anchor="middle" font-size="22" fill="#b91c1c">Meter guesses</text>
+      <text x="920" y="136" text-anchor="middle" font-size="16" fill="#b91c1c">SQL Server</text>
+      <rect x="400" y="300" width="300" height="80" rx="8" fill="#0c3140"/>
+      <text x="550" y="348" text-anchor="middle" font-size="22" fill="#fff">Next morning</text>
+    </svg>
+  </div>
+  <div class="block">
+    <h1>The call ends and the problem is still open</h1>
+    <div class="key"><span class="red">RED: Finished on the first call</span></div>
+    <div class="chart" id="c-fcr"></div>
+  </div>
+  <div class="block">
+    <h1>The complaint folder forgets the story when it moves</h1>
+    <div class="key"><span class="red">RED: Opened again</span></div>
+    <div class="chart" id="c-forget"></div>
+  </div>
+  <div class="block">
+    <h1>Days until the complaint is finished by hand</h1>
+    <div class="key"><span class="red">RED: Days to finish</span></div>
+    <div class="chart" id="c-handdays"></div>
+  </div>
+</section>
+
+<section class="slide">
+  <h1>Meet NorthFlow</h1>
+  <div class="meet">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" role="img" aria-label="NorthFlow">
+      <defs>
+        <clipPath id="meetClip"><polygon points="100,24 138,106 112,106 112,170 88,170 88,106 62,106"/></clipPath>
+        <filter id="meetGlow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="10"/></filter>
+      </defs>
+      <rect x="0" y="0" width="200" height="200" rx="40" fill="#FFFFFF" stroke="#0C3140" stroke-width="2"/>
+      <circle cx="100" cy="104" r="70" fill="#237A94" opacity="0.35" filter="url(#meetGlow)"/>
+      <g clip-path="url(#meetClip)">
+        <path d="M0,44 Q12.5,39 25,44 T50,44 T75,44 T100,44 T125,44 T150,44 T175,44 T200,44" fill="none" stroke="#0C3140" stroke-width="10" stroke-linecap="round"/>
+        <path d="M0,68 Q12.5,62.5 25,68 T50,68 T75,68 T100,68 T125,68 T150,68 T175,68 T200,68" fill="none" stroke="#0C3140" stroke-width="10" stroke-linecap="round"/>
+        <path d="M0,92 Q12.5,86 25,92 T50,92 T75,92 T100,92 T125,92 T150,92 T175,92 T200,92" fill="none" stroke="#0C3140" stroke-width="10" stroke-linecap="round"/>
+        <path d="M0,116 Q12.5,110 25,116 T50,116 T75,116 T100,116 T125,116 T150,116 T175,116 T200,116" fill="none" stroke="#0C3140" stroke-width="10" stroke-linecap="round"/>
+        <path d="M0,140 Q12.5,133.5 25,140 T50,140 T75,140 T100,140 T125,140 T150,140 T175,140 T200,140" fill="none" stroke="#0C3140" stroke-width="10" stroke-linecap="round"/>
+        <path d="M0,164 Q12.5,157.5 25,164 T50,164 T75,164 T100,164 T125,164 T150,164 T175,164 T200,164" fill="none" stroke="#0C3140" stroke-width="10" stroke-linecap="round"/>
+      </g>
+    </svg>
+  </div>
+</section>
+
+<section class="slide">
+  <h1>SQL, Postgres, and typed notes vs our database</h1>
+  <svg class="diagram" viewBox="0 0 1100 560" role="img">
+    <line x1="180" y1="120" x2="550" y2="280" stroke="#0c3140" stroke-width="2"/>
+    <line x1="550" y1="120" x2="550" y2="250" stroke="#0c3140" stroke-width="2"/>
+    <line x1="920" y1="120" x2="550" y2="280" stroke="#0c3140" stroke-width="2"/>
+    <rect x="50" y="50" width="260" height="90" rx="8" fill="#fff" stroke="#0c3140"/>
+    <text x="180" y="104" text-anchor="middle" font-size="26">SQL</text>
+    <rect x="420" y="40" width="260" height="90" rx="8" fill="#fff" stroke="#0c3140"/>
+    <text x="550" y="94" text-anchor="middle" font-size="26">Postgres</text>
+    <rect x="790" y="50" width="260" height="90" rx="8" fill="#fff" stroke="#0c3140"/>
+    <text x="920" y="92" text-anchor="middle" font-size="22">Manual entered</text>
+    <text x="920" y="118" text-anchor="middle" font-size="22">data</text>
+    <rect x="360" y="270" width="380" height="120" rx="12" fill="#0c3140"/>
+    <text x="550" y="328" text-anchor="middle" font-size="28" fill="#fff">Our database</text>
+    <text x="550" y="360" text-anchor="middle" font-size="16" fill="#8ed0e4">NorthFlow</text>
+  </svg>
+</section>
+
+<section class="slide">
+  <div class="stack">
+    <h1>Minimal Cost</h1>
+    <h1>No rebuild. Forms, API handles, and local copies.</h1>
+    <h1>No new meters $0</h1>
+    <h1>Database servers</h1>
+  </div>
+</section>
+
+<section class="slide scroll">
+  <div class="block">
+    <h1>Biggest saving: the regulator penalty</h1>
+    <div class="key"><span class="red">RED: Avoided if the score is back near 4</span></div>
+    <div class="figure">
+      <strong class="red">$9.6M</strong>
+      <p>$2.4M each quarter. Score now is 2.58.</p>
+    </div>
+  </div>
+  <div class="block">
+    <h1>Extra calls when the first try fails</h1>
+    <div class="key"><span class="red">RED: A year of those calls</span></div>
+    <div class="figure">
+      <strong class="red">$1.5M</strong>
+      <p>$7.40 a call</p>
+    </div>
+  </div>
+  <div class="block">
+    <h1>Complaints passed on, then opened again</h1>
+    <div class="key"><span class="red">RED: History lost</span><span class="blue">BLUE: Handled in place</span></div>
+    <div class="figure">
+      <strong class="red">$0.5M</strong>
+      <p><span class="red">$121</span> when history is lost, vs <span class="blue">$40</span> in place</p>
+    </div>
+  </div>
+  <div class="block">
+    <h1>Savings in a year</h1>
+    <div class="key"><span class="ink">$9.6M + $1.5M + $0.5M</span></div>
+    <div class="figure">
+      <strong>$11.6M</strong>
+      <p>CAD</p>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h1>One database</h1>
+  <div class="trio">
+    <div class="card">
+      <svg viewBox="0 0 200 140" aria-hidden="true">
+        <rect x="30" y="28" width="140" height="90" rx="8" fill="none" stroke="#0c3140" stroke-width="2"/>
+        <rect x="48" y="46" width="28" height="28" rx="4" fill="none" stroke="#b91c1c" stroke-width="2"/>
+        <rect x="86" y="46" width="28" height="28" rx="4" fill="none" stroke="#b91c1c" stroke-width="2"/>
+        <rect x="124" y="46" width="28" height="28" rx="4" fill="none" stroke="#b91c1c" stroke-width="2"/>
+      </svg>
+      <h2>All eggs in one basket</h2>
+    </div>
+    <div class="card">
+      <svg viewBox="0 0 200 140" aria-hidden="true">
+        <rect x="70" y="58" width="60" height="46" rx="6" fill="none" stroke="#0c3140" stroke-width="2"/>
+        <path d="M78 58 V46 a22 22 0 0 1 44 0 V58" fill="none" stroke="#0c3140" stroke-width="2"/>
+      </svg>
+      <h2>Security</h2>
+    </div>
+    <div class="card">
+      <svg viewBox="0 0 200 140" aria-hidden="true">
+        <rect x="24" y="78" width="46" height="32" rx="6" fill="none" stroke="#1d4ed8" stroke-width="2"/>
+        <rect x="88" y="52" width="70" height="58" rx="6" fill="none" stroke="#1d4ed8" stroke-width="2"/>
+        <path d="M74 94 H84" stroke="#1d4ed8" stroke-width="2"/>
+      </svg>
+      <h2>Scalability</h2>
+    </div>
+  </div>
+</section>
+
+<section class="slide">
+  <h1>Connected to the work</h1>
+  <div class="pair tall">
+    <div class="card">
+      <svg viewBox="0 0 280 160" aria-hidden="true">
+        <rect x="16" y="46" width="90" height="68" rx="8" fill="#0c3140"/>
+        <text x="61" y="86" text-anchor="middle" font-size="14" fill="#fff">Database</text>
+        <path d="M112 80 H156" stroke="#237a94" stroke-width="2"/>
+        <path d="M148 72 L160 80 L148 88" fill="none" stroke="#237a94" stroke-width="2"/>
+        <rect x="168" y="36" width="96" height="88" rx="8" fill="none" stroke="#0c3140" stroke-width="2"/>
+        <text x="216" y="86" text-anchor="middle" font-size="14">The app</text>
+      </svg>
+      <h2>User-facing app</h2>
+    </div>
+    <div class="card">
+      <svg viewBox="0 0 280 160" aria-hidden="true">
+        <rect x="16" y="46" width="90" height="68" rx="8" fill="#0c3140"/>
+        <text x="61" y="86" text-anchor="middle" font-size="14" fill="#fff">Database</text>
+        <path d="M112 80 H156" stroke="#237a94" stroke-width="2"/>
+        <path d="M148 72 L160 80 L148 88" fill="none" stroke="#237a94" stroke-width="2"/>
+        <polyline points="176,108 206,78 230,92 258,48" fill="none" stroke="#b91c1c" stroke-width="3"/>
+      </svg>
+      <h2>Analytics tools</h2>
+    </div>
+  </div>
+</section>
+
+<section class="slide" data-play="sim">
+  <h1>Money, time, and the score in under 12 months</h1>
+  <div class="key"><span class="red">RED: Happiness score</span><span class="blue">BLUE: Money saved</span><span class="ink">DARK: Time to fetch</span></div>
+  <p class="sim-month" id="sim-month">Month 1</p>
+  <div class="ticks" id="sim-ticks"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div class="sim">
+    <div><b class="red" id="sim-score">2.58</b><small>back to 4</small></div>
+    <div><b class="blue" id="sim-money">$0</b><small>saved</small></div>
+    <div><b id="sim-time">1 day</b><small>to fetch</small></div>
+  </div>
+</section>
+
+<section class="slide" data-play="fetch">
+  <h1>Each fetch is saved. The next one is quicker.</h1>
+  <div class="key"><span class="red">RED: First trip to the old system</span><span class="blue">BLUE: Later trips stay saved</span></div>
+  <div class="lane">
+    <div class="node">Existing systems</div>
+    <div class="node fill">NorthFlow<div class="slots" id="slots"><i></i><i></i><i></i><i></i></div></div>
+    <div class="node">Request</div>
+    <span class="mover" id="mover"></span>
+  </div>
+</section>
+
+<script>
+const MONTHS = ["Oct 24","Nov","Dec","Jan 25","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec","Jan 26","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep 26"];
+const RED = "#b91c1c";
+const BLUE = "#1d4ed8";
+const pct = v => Math.round(v) + "%";
+const num = v => Math.round(v).toLocaleString("en-GB");
+const one = v => v.toFixed(1);
+
+const CHARTS = {
+  "c-ai": {
+    animate: true,
+    labels: ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep"],
+    y: { min: 10000, max: 24000, fmt: num, color: RED },
+    y2: { min: 10, max: 16, fmt: pct, color: BLUE },
+    series: [
+      { axis: "y", color: RED, values: [13959,16243,16385,16986,17559,19189,20444,21043,21156] },
+      { axis: "y2", color: BLUE, values: [11.0,11.4,11.8,12.2,12.6,13.0,13.4,13.8,14.2] }
+    ]
+  },
+  "c-triage": {
+    labels: ["Urgent", "Middle", "Can wait"],
+    y: { min: 0, max: 100, fmt: pct },
+    series: [
+      { color: RED, values: [6.0, 23.7, 70.3] },
+      { color: BLUE, values: [6.3, 24.3, 69.4] }
+    ]
+  },
+  "c-est": {
+    animate: true,
+    labels: MONTHS,
+    labelEvery: 3,
+    y: { min: 0, max: 80, fmt: pct },
+    series: [
+      { color: RED, values: [64.2,63.2,58.7,60.7,60.7,61.3,62.4,63.7,63.5,61.0,61.2,60.0,61.7,61.3,63.0,62.5,66.0,60.8,60.8,61.1,60.2,58.2,62.0,56.7] },
+      { color: BLUE, values: [20.8,21.1,20.6,21.4,17.2,22.1,23.5,22.8,22.5,21.2,23.2,22.6,21.7,19.5,23.1,21.1,22.0,22.4,22.2,19.5,24.4,20.0,18.9,21.8] }
+    ]
+  },
+  "c-crate": {
+    labels: MONTHS,
+    labelEvery: 3,
+    y: { min: 0, max: 1, fmt: one },
+    series: [
+      { color: RED, values: [0.594,0.531,0.638,0.606,0.601,0.594,0.687,0.720,0.666,0.871,0.705,0.697,0.741,0.642,0.720,0.733,0.685,0.810,0.775,0.707,0.779,0.835,0.809,0.832] },
+      { color: BLUE, values: [0.497,0.466,0.523,0.557,0.448,0.498,0.565,0.538,0.551,0.651,0.543,0.549,0.678,0.509,0.625,0.669,0.543,0.639,0.665,0.578,0.640,0.701,0.643,0.692] }
+    ]
+  },
+  "c-attr": {
+    animate: true,
+    labels: MONTHS,
+    labelEvery: 3,
+    y: { min: 0, max: 50, fmt: pct, color: RED },
+    y2: { min: 0, max: 8, fmt: one, color: BLUE },
+    series: [
+      { axis: "y", color: RED, values: [11.7,15.4,16.5,15.9,12.1,17.4,16.1,9.8,13.1,18.3,12.1,16.2,13.6,11.8,11.7,28.7,30.0,39.7,40.3,46.0,45.4,41.8,40.9,40.9] },
+      { axis: "y2", color: BLUE, values: [2.2,1.6,2.2,2.3,1.7,2.1,2.0,2.2,2.1,2.7,2.4,2.4,2.9,2.1,2.6,3.3,2.6,5.2,5.1,4.8,4.8,6.2,5.1,5.5] }
+    ]
+  },
+  "c-lift": {
+    labels: MONTHS,
+    labelEvery: 3,
+    y: { min: 0, max: 8, fmt: one },
+    series: [
+      { color: RED, values: [2.2,1.6,2.2,2.3,1.7,2.1,2.0,2.2,2.1,2.7,2.4,2.4,2.9,2.1,2.6,3.3,2.6,5.2,5.1,4.8,4.8,6.2,5.1,5.5] },
+      { color: BLUE, values: [2.54,2.42,2.72,2.78,2.46,2.58,3.04,2.94,2.96,3.58,2.94,2.96,3.42,2.76,3.24,3.36,2.94,3.2,3.44,3.52,3.62,3.92,3.48,3.28] }
+    ]
+  },
+  "c-kpi": {
+    labels: MONTHS,
+    labelEvery: 3,
+    y: { min: 0, max: 1600, fmt: num, color: RED },
+    y2: { min: 2, max: 5, fmt: one, color: BLUE },
+    series: [
+      { axis: "y", color: RED, values: [912,830,951,985,851,901,1023,1004,982,1222,1026,1020,1189,940,1120,1177,1002,1104,1186,1190,1214,1347,1189,1139] },
+      { axis: "y2", color: BLUE, values: [4.30,4.22,4.15,4.08,4.00,3.92,3.85,3.77,3.70,3.62,3.55,3.47,3.40,3.32,3.25,3.17,3.10,3.02,2.95,2.88,2.80,2.72,2.65,2.58] }
+    ]
+  },
+  "c-back": {
+    labels: MONTHS,
+    labelEvery: 3,
+    y: { min: 0, max: 2000, fmt: num },
+    series: [
+      { color: RED, values: [436,506,584,642,653,653,724,786,803,963,900,920,1080,953,1054,1206,1208,1221,1408,1540,1619,1743,1737,1758] },
+      { color: BLUE, values: [912,830,951,985,851,901,1023,1004,982,1222,1026,1020,1189,940,1120,1177,1002,1104,1186,1190,1214,1347,1189,1139] }
+    ]
+  },
+  "c-re": {
+    labels: MONTHS,
+    labelEvery: 3,
+    y: { min: 0, max: 280, fmt: num, color: RED },
+    y2: { min: 0, max: 2000, fmt: num, color: BLUE },
+    series: [
+      { axis: "y", color: RED, values: [157,134,140,161,145,161,165,167,152,210,167,170,187,151,170,184,156,198,193,153,181,175,89,10] },
+      { axis: "y2", color: BLUE, values: [436,506,584,642,653,653,724,786,803,963,900,920,1080,953,1054,1206,1208,1221,1408,1540,1619,1743,1737,1758] }
+    ]
+  },
+  "c-xfer": {
+    labels: MONTHS,
+    labelEvery: 3,
+    y: { min: 0, max: 50, fmt: pct },
+    series: [
+      { color: RED, values: [33.1,36.0,34.3,34.5,36.7,33.3,32.7,36.1,34.3,35.8,37.1,33.7,37.2,35.5,34.8,34.1,36.1,35.4,33.2,37.7,34.8,34.9,33.6,33.2] },
+      { color: BLUE, values: [17.2,16.1,14.7,16.3,17.0,17.9,16.1,16.6,15.5,17.2,16.3,16.7,15.7,16.1,15.2,15.6,15.6,16.9,16.2,14.6,15.5,13.8,7.5,0.8] }
+    ]
+  },
+  "c-days": {
+    labels: ["Stays in one computer", "Passed between computers"],
+    y: { min: 0, max: 50, fmt: num, color: RED },
+    y2: { min: 0, max: 100, fmt: pct, color: BLUE },
+    series: [
+      { axis: "y", color: RED, values: [23.0, 38.2] },
+      { axis: "y2", color: BLUE, values: [70.4, 88.7] }
+    ]
+  },
+  "c-fcr": {
+    labels: MONTHS,
+    labelEvery: 3,
+    y: { min: 0, max: 100, fmt: pct, color: RED },
+    series: [
+      { color: RED, values: [62.0,61.1,60.2,59.3,58.4,57.5,56.6,55.7,54.8,53.9,53.0,52.1,51.2,50.3,49.4,48.5,47.6,46.7,45.8,44.9,44.0,43.1,42.2,41.3] }
+    ]
+  },
+  "c-forget": {
+    labels: ["Stays in the folder", "Moves to another computer"],
+    y: { min: 0, max: 40, fmt: pct, color: RED },
+    series: [
+      { color: RED, values: [8.4, 26.9] }
+    ]
+  },
+  "c-handdays": {
+    labels: MONTHS,
+    labelEvery: 3,
+    y: { min: 0, max: 50, fmt: one, color: RED },
+    series: [
+      { color: RED, values: [9.1,16.5,18.4,19.5,20.1,21.4,22.0,23.2,23.1,24.9,26.6,28.6,27.6,29.8,29.6,31.0,33.6,33.4,34.5,36.7,38.6,40.2,41.6,43.8] }
+    ]
+  }
+};
+
+const NS = "http://www.w3.org/2000/svg";
+function svgEl(name, attrs) {
+  const n = document.createElementNS(NS, name);
+  for (const [k, v] of Object.entries(attrs || {})) n.setAttribute(k, String(v));
+  return n;
+}
+function text(parent, str, x, y, attrs) {
+  const n = svgEl("text", Object.assign({ x, y }, attrs || {}));
+  n.textContent = str;
+  parent.appendChild(n);
+  return n;
+}
+function niceTicks(min, max, count) {
+  const span = max - min || 1;
+  const rough = span / count;
+  const pow = Math.pow(10, Math.floor(Math.log10(rough)));
+  const err = rough / pow;
+  const step = err >= 7.5 ? 10 * pow : err >= 3 ? 5 * pow : err >= 1.5 ? 2 * pow : pow;
+  const ticks = [];
+  const start = Math.ceil((min - step * 1e-6) / step) * step;
+  for (let v = start; v <= max + step * 1e-6; v += step) ticks.push(Math.round(v * 1000) / 1000);
+  return ticks.length ? ticks : [min];
+}
+function mapY(v, axis, pad, h) {
+  const inner = h - pad.t - pad.b;
+  return pad.t + inner - ((v - axis.min) / (axis.max - axis.min)) * inner;
+}
+function mapX(i, n, pad, w) {
+  const inner = w - pad.l - pad.r;
+  if (n === 1) return pad.l + inner / 2;
+  return pad.l + (inner * i) / (n - 1);
+}
+function draw(host, spec, t) {
+  const w = host.clientWidth;
+  const h = host.clientHeight;
+  if (w < 20 || h < 20) return false;
+  host.replaceChildren();
+  const svg = svgEl("svg", { width: w, height: h, viewBox: `0 0 ${w} ${h}` });
+  host.appendChild(svg);
+  const dual = !!spec.y2;
+  const pad = { l: 58, r: dual ? 52 : 18, t: 12, b: 32 };
+  const n = spec.labels.length;
+  niceTicks(spec.y.min, spec.y.max, 4).forEach(v => {
+    const y = mapY(v, spec.y, pad, h);
+    svg.appendChild(svgEl("line", { x1: pad.l, x2: w - pad.r, y1: y, y2: y, stroke: "#d7e4ea" }));
+    text(svg, spec.y.fmt(v), pad.l - 8, y + 4, { "text-anchor": "end", "font-size": 13, fill: spec.y.color || "#57534e" });
+  });
+  if (dual) {
+    niceTicks(spec.y2.min, spec.y2.max, 4).forEach(v => {
+      const y = mapY(v, spec.y2, pad, h);
+      text(svg, spec.y2.fmt(v), w - pad.r + 8, y + 4, { "text-anchor": "start", "font-size": 13, fill: spec.y2.color || "#57534e" });
+    });
+  }
+  spec.labels.forEach((label, i) => {
+    const every = spec.labelEvery || 1;
+    if (n > 12 && i % every !== 0) return;
+    text(svg, label, mapX(i, n, pad, w), h - 10, { "text-anchor": "middle", "font-size": 13, fill: "#57534e" });
+  });
+  spec.series.forEach(s => {
+    const axis = s.axis === "y2" ? spec.y2 : spec.y;
+    const maxF = t * (n - 1);
+    const last = Math.min(n - 1, Math.floor(maxF));
+    const pts = [];
+    for (let i = 0; i <= last; i++) pts.push([mapX(i, n, pad, w), mapY(s.values[i], axis, pad, h)]);
+    if (last < n - 1) {
+      const f = maxF - last;
+      const x0 = mapX(last, n, pad, w);
+      const x1 = mapX(last + 1, n, pad, w);
+      const y0 = mapY(s.values[last], axis, pad, h);
+      const y1 = mapY(s.values[last + 1], axis, pad, h);
+      pts.push([x0 + (x1 - x0) * f, y0 + (y1 - y0) * f]);
+    }
+    if (pts.length < 2) return;
+    const d = pts.map((p, i) => (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1)).join(" ");
+    svg.appendChild(svgEl("path", {
+      d, fill: "none", stroke: s.color, "stroke-width": 3,
+      "stroke-linejoin": "round", "stroke-linecap": "round"
+    }));
+  });
+  return true;
+}
+
+function play(host) {
+  const spec = CHARTS[host.id];
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const dur = spec.animate && !reduce ? 1200 : 1;
+  const tok = (host._tok || 0) + 1;
+  host._tok = tok;
+  const t0 = performance.now();
+  function frame(now) {
+    if (host._tok !== tok) return;
+    const p = Math.min(1, (now - t0) / dur);
+    const e = 1 - Math.pow(1 - p, 3);
+    if (!draw(host, spec, e) || p < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+const slides = Array.from(document.querySelectorAll(".slide"));
+let index = 0;
+let playTimers = [];
+function stopPlay() {
+  playTimers.forEach(clearTimeout);
+  playTimers = [];
+}
+function later(fn, ms) {
+  playTimers.push(setTimeout(fn, ms));
+}
+function startSim() {
+  const scores = [2.58, 2.76, 2.94, 3.11, 3.29, 3.47, 3.64, 3.82, 4, 4, 4];
+  const waits = ["1 day", "18 hrs", "8 hrs", "3 hrs", "1 hr", "20 min", "5 min", "1 min", "Saved", "Saved", "Saved"];
+  const ticks = document.querySelectorAll("#sim-ticks i");
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const paint = (step) => {
+    document.getElementById("sim-score").textContent = scores[step].toFixed(2);
+    document.getElementById("sim-money").textContent = "$" + (11.6 * (step + 1) / 12).toFixed(1) + "M";
+    document.getElementById("sim-time").textContent = waits[step];
+    document.getElementById("sim-month").textContent = "Month " + (step + 1);
+    ticks.forEach((mark, i) => mark.classList.toggle("on", i <= step));
+  };
+  paint(0);
+  if (reduce) { paint(10); return; }
+  for (let step = 1; step < scores.length; step++) later(() => paint(step), step * 700);
+}
+function startFetch() {
+  const mover = document.getElementById("mover");
+  const slots = document.querySelectorAll("#slots i");
+  const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  slots.forEach((slot) => slot.classList.remove("on"));
+  const hop = (left, color, ms) => {
+    mover.style.transition = "left " + ms + "ms linear, background-color 0.2s";
+    mover.style.left = left;
+    mover.style.background = color;
+  };
+  if (reduce) {
+    hop("50%", "#1d4ed8", 1);
+    slots.forEach((slot) => slot.classList.add("on"));
+    return;
+  }
+  hop("84%", "#b91c1c", 1);
+  const steps = [
+    ["16%", "#b91c1c", 1200, false],
+    ["50%", "#b91c1c", 700, true],
+    ["84%", "#1d4ed8", 450, false],
+    ["50%", "#1d4ed8", 480, true],
+    ["84%", "#1d4ed8", 280, false],
+    ["50%", "#1d4ed8", 260, true],
+    ["70%", "#1d4ed8", 180, false],
+    ["50%", "#1d4ed8", 140, true]
+  ];
+  let at = 350;
+  steps.forEach((step) => {
+    later(() => {
+      hop(step[0], step[1], step[2]);
+      if (step[3]) {
+        const next = document.querySelector("#slots i:not(.on)");
+        if (next) next.classList.add("on");
+      }
+    }, at);
+    at += step[2] + 160;
+  });
+}
+function renderSlide() {
+  stopPlay();
+  slides.forEach((s, i) => s.classList.toggle("on", i === index));
+  document.getElementById("prev").disabled = index === 0;
+  document.getElementById("next").disabled = index === slides.length - 1;
+  const slide = slides[index];
+  if (slide.classList.contains("scroll")) slide.scrollTop = 0;
+  requestAnimationFrame(() => requestAnimationFrame(() => {
+    slide.querySelectorAll(".chart").forEach(play);
+    if (slide.dataset.play === "sim") startSim();
+    if (slide.dataset.play === "fetch") startFetch();
+  }));
+}
+function go(dir) {
+  const next = index + dir;
+  if (next < 0 || next >= slides.length) return;
+  index = next;
+  renderSlide();
+}
+document.getElementById("prev").addEventListener("click", () => go(-1));
+document.getElementById("next").addEventListener("click", () => go(1));
+document.addEventListener("keydown", e => {
+  if (e.key === "ArrowRight") go(1);
+  else if (e.key === "ArrowLeft") go(-1);
+  else if ((e.key === "ArrowDown" || e.key === "ArrowUp") && slides[index].classList.contains("scroll")) {
+    slides[index].scrollBy({ top: e.key === "ArrowDown" ? window.innerHeight * 0.92 : -window.innerHeight * 0.92, behavior: "smooth" });
+    e.preventDefault();
+  }
+});
+window.addEventListener("resize", () => {
+  slides[index].querySelectorAll(".chart").forEach(host => draw(host, CHARTS[host.id], 1));
+});
+renderSlide();
+</script>
+</body>
+</html>

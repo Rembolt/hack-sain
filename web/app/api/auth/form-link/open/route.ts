@@ -22,6 +22,6 @@ export async function POST(request: Request) {
   }
 
   await startSession(ticket.email);
-  await passForm(ticket.email);
+  await passForm(ticket.email, ticket.form);
   return Response.json({ href: formHref(ticket.form) });
 }

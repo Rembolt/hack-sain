@@ -1,0 +1,106 @@
+.page {
+  min-height: calc(100dvh - 3.5rem);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 7vh;
+  padding: 0 0.35rem 6vh;
+  box-sizing: border-box;
+}
+
+.name {
+  width: min(72%, 52rem);
+  margin: 0;
+  line-height: 0;
+  color: var(--on-bg);
+}
+
+.name svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+}
+
+.name text {
+  font-family: "Source Sans 3", "Segoe UI", sans-serif;
+  font-size: 188px;
+  font-weight: 200;
+  fill: currentColor;
+}
+
+.start {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 12.5rem;
+  padding: 0.85rem 2.8rem;
+  color: var(--on-bg);
+  text-decoration: none;
+  font-size: clamp(1.6rem, 3.2vw, 2.2rem);
+  font-weight: 300;
+  letter-spacing: 0.12em;
+}
+
+.start::before,
+.start::after {
+  content: "";
+  position: absolute;
+  border: 2px solid currentColor;
+  pointer-events: none;
+}
+
+.start::before {
+  inset: 0;
+}
+
+.start::after {
+  inset: -0.35rem;
+  opacity: 0.45;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .start::before {
+    animation: wave 3.4s ease-in-out infinite;
+  }
+
+  .start::after {
+    animation: wave 3.4s ease-in-out infinite reverse;
+  }
+
+  .start:hover::before,
+  .start:hover::after,
+  .start:focus-visible::before,
+  .start:focus-visible::after {
+    animation-play-state: paused;
+  }
+}
+
+.start:focus-visible {
+  outline: none;
+}
+
+@keyframes wave {
+  0%,
+  100% {
+    border-radius: 46% 54% 48% 52% / 58% 42% 58% 42%;
+    transform: scale(1, 1);
+  }
+  33% {
+    border-radius: 60% 40% 62% 38% / 40% 60% 36% 64%;
+    transform: scale(1.045, 0.94);
+  }
+  66% {
+    border-radius: 38% 62% 36% 64% / 64% 36% 62% 38%;
+    transform: scale(0.97, 1.06);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .start::before,
+  .start::after {
+    border-radius: 999px;
+  }
+}

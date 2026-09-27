@@ -37,7 +37,15 @@ function readIssues(body: unknown): SchemaIssue[] | null {
   });
 }
 
-export function RecordDesk({ slug }: { slug: RecordSlug }) {
+export function RecordDesk({
+  slug,
+  backHref = "/form",
+  backLabel = "All forms",
+}: {
+  slug: RecordSlug;
+  backHref?: string;
+  backLabel?: string;
+}) {
   const form = recordForms[slug];
   const { shape } = form;
   const [draft, setDraft] = useState<RecordDraft>(() => emptyRecordDraft(shape));
@@ -164,7 +172,7 @@ export function RecordDesk({ slug }: { slug: RecordSlug }) {
     <main className={sheet.page}>
       <div className={sheet.column}>
         <p className={classes.back}>
-          <Link href="/form">All forms</Link>
+          <Link href={backHref}>{backLabel}</Link>
         </p>
         <form aria-label={shape.title} autoComplete="off" noValidate onSubmit={onSubmit}>
           {pending ? (
