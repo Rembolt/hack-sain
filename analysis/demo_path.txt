@@ -1,0 +1,75 @@
+
+
+Graphs:
+AIpolit -> graph metrics vs. complaint reduction (proof AI =\= less complain)
+Triage -> tiered complains vs complain resolution is as bad as non tiered
+
+analytical tool
+
+Materhub vs Smartmeter vs estimated bill (seems to be it)
+Materhub vs Smartmeter vs Complain rate (confirms only corelation)
+
+Hiring attrition vs complaints increase (seems to be it)
+complaints increase per city with hiring attrition vs city without (same, confirms correlation)
+
+There are more conclusions but for the sake of time...
+
+Complain open rate vs kpi
+Backlogs overtime vs Complain open rate (cant solve in time)
+reopened case vs backlogs
+Transfer vs reopened case (history loss) 
+Transfered complains vs kpi
+
+-Systems communication diagram-
+	+
+--Transfer Delays--
+	2-4 minutes in-house premesis documents acquisition mid customer service rep and client call 
+	Billing, Meter/estimation, costumer info data retrieval might take a day(nightly batches)
+	|| also different stacks
+	calls end without resolution
+
+	CaseTrack ALSO loses history on transfer as per data
+	Complaint never gets solved (long time for manual review)
+
+How do we solve this
+Meet NorthFlow
+A unified database of all client, case, and reading documentation at the palm of your hand in miliseconds
+
+A big reason why big companies like NOrthwind do not unify their data is translation costs and refactor time + maintenance makes it unfeasible
+
+what if you didn't have to do that
+what if w had a middle man, a translation layer.
+
+one spot where a costumer support agent (for example) went to get EVERY type of data.
+
+At every request NorthFlow fetches the data from existing system and saves it so next time, fetching is even quicker. Overtime all data is at the tip of your fingers.
+
+SHOW WEBSITE
+	
+
+
+--Cost estimates--
+no restructure as unified database gets built overtime
+(forms, api requests, handles, local copies)
+
+No new meter
+Estimated database servers price
+
+
+--Saving estimates--
+	3 most saved cash streams
+	sum
+
+saving - cost = profit
+
+--risk analysis--
+	resources isolation (all eggs in one basket)
+	Security
+	Scalability
+	Integration with user facing app
+	integration with analytics tools we built 
+	
+Simulation of money, time saved, and KPIS increase back to 4 in less than 12 month
+
+
+
