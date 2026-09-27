@@ -29,9 +29,18 @@ def get_db():
 def get_all_users(
     db: Session = Depends(get_db)
 ):
-    return db.query(
+    users = db.query(
         models.Authorization
     ).all()
+
+    return [
+        {
+            "id": user.id,
+            "username": user.username,
+            "is_admin": user.is_admin
+        }
+        for user in users
+    ]
 
 
 @app.post("/authorization")
@@ -40,12 +49,14 @@ def create_user(
     db: Session = Depends(get_db)
 ):
 
-    existing = db.query(
-        models.Authorization
-    ).filter(
-        models.Authorization.username ==
-        request.username
-    ).first()
+    existing = (
+        db.query(models.Authorization)
+        .filter(
+            models.Authorization.username
+            == request.username
+        )
+        .first()
+    )
 
     if existing:
         raise HTTPException(
@@ -57,7 +68,8 @@ def create_user(
         username=request.username,
         password_hash=hash_password(
             request.password
-        )
+        ),
+        is_admin=request.is_admin
     )
 
     db.add(user)
@@ -66,7 +78,8 @@ def create_user(
 
     return {
         "id": user.id,
-        "username": user.username
+        "username": user.username,
+        "is_admin": user.is_admin
     }
 
 @app.get("/schemas")
@@ -121,12 +134,14 @@ def login(
     db: Session = Depends(get_db)
 ):
 
-    user = db.query(
-        models.Authorization
-    ).filter(
-        models.Authorization.username ==
-        request.username
-    ).first()
+    user = (
+        db.query(models.Authorization)
+        .filter(
+            models.Authorization.username
+            == request.username
+        )
+        .first()
+    )
 
     if not user:
         raise HTTPException(
@@ -134,12 +149,10 @@ def login(
             detail="Invalid username or password"
         )
 
-    valid = verify_password(
+    if not verify_password(
         request.password,
         user.password_hash
-    )
-
-    if not valid:
+    ):
         raise HTTPException(
             status_code=401,
             detail="Invalid username or password"
@@ -147,5 +160,37 @@ def login(
 
     return {
         "message": "Login successful",
-        "username": user.username
+        "username": user.username,
+        "is_admin": user.is_admin
+    }
+
+@app.put("/authorization/{username}/admin")
+def update_admin_status(
+    username: str,
+    is_admin: bool,
+    db: Session = Depends(get_db)
+):
+    user = (
+        db.query(models.Authorization)
+        .filter(
+            models.Authorization.username
+            == username
+        )
+        .first()
+    )
+
+    if not user:
+        raise HTTPException(
+            status_code=404,
+            detail="User not found"
+        )
+
+    user.is_admin = is_admin
+
+    db.commit()
+    db.refresh(user)
+
+    return {
+        "username": user.username,
+        "is_admin": user.is_admin
     }

@@ -2,6 +2,7 @@ from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import String
 from sqlalchemy import Text
+from sqlalchemy import Boolean
 
 from database import Base
 
@@ -21,6 +22,13 @@ class Authorization(Base):
         String,
         nullable=False
     )
+
+    is_admin = Column(
+        Boolean,
+        nullable=False,
+        default=False
+    )
+
 
 
 class SchemaTemplate(Base):

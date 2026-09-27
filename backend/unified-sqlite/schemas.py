@@ -4,11 +4,16 @@ from pydantic import BaseModel
 class AuthCreate(BaseModel):
     username: str
     password: str
+    is_admin: bool = False
 
 
 class AuthResponse(BaseModel):
     id: int
     username: str
+    is_admin: bool
+
+    class Config:
+        from_attributes = True
 
     class Config:
         from_attributes = True

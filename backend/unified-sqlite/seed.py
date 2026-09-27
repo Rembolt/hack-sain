@@ -13,7 +13,8 @@ db = SessionLocal()
 admins = [
     {
         "username": "admin",
-        "password": "123456"
+        "password": "123456",
+        "is_admin": True
     },
 ]
 
@@ -33,7 +34,8 @@ for admin in admins:
                 username=admin["username"],
                 password_hash=hash_password(
                     admin["password"]
-                )
+                ),
+                is_admin=admin["is_admin"]
             )
         )
 
