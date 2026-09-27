@@ -1,17 +1,25 @@
 
 Run Database Server
 
-    uvicorn main:app --reload 
+    uvicorn main:app --reload --port 8001
         in terminal
 
 Base URL
 
-http://localhost:8000
+http://localhost:8001
 
 Available Endpoints
 
-GET /complaints
-    Returns all complaints in the database.
+GET /complaints?cursor=&limit=100
+    Returns one chunk of complaints changed after the cursor.
+    cursor is empty for the first chunk, then next_cursor from the last response.
+    limit is 1 to 500 and defaults to 100.
+
+    {
+      "chunk": [ ...rows... ],
+      "next_cursor": "2026-09-27T09:00:00Z|COMP-002",
+      "has_more": false
+    }
 
 POST /complaints
     Creates a new complaint.
@@ -21,21 +29,25 @@ GET /accounts/{account_id}/complaints
 
 Swagger Documentation
 
-http://localhost:8000/docs
+http://localhost:8001/docs
 
 Example
 
-GET http://localhost:8000/complaints
+GET http://localhost:8001/complaints?limit=100
 
 Response:
-[
-  {
-    "complaint_id": "COMP-001",
-    "ticket_number": "TKT-001",
-    "account_id": "ACC-100001",
-    "reason": "High Water Bill"
-  }
-]
+{
+  "chunk": [
+    {
+      "complaint_id": "COMP-002",
+      "ticket_number": "TKT-002",
+      "account_id": "ACC-100002",
+      "reason": "Power Outage"
+    }
+  ],
+  "next_cursor": "2026-09-27T09:00:00Z|COMP-002",
+  "has_more": false
+}
 
 Database
 

@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     return Response.json({ message: "This link is not valid." }, { status: 403 });
   }
 
-  if (!checkPassword(ticket.email, password)) {
+  if (!(await checkPassword(ticket.email, password))) {
     return Response.json({ message: "Those credentials were not accepted." }, { status: 401 });
   }
 

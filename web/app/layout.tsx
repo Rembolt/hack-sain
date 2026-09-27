@@ -1,18 +1,10 @@
 import "@mantine/core/styles.layer.css";
 import type { Metadata } from "next";
 import { ColorSchemeScript, MantineProvider, mantineHtmlProps } from "@mantine/core";
-import { Source_Sans_3 } from "next/font/google";
 import { Brand } from "./brand";
 import { SchemeSwitch } from "./scheme-switch";
 import { theme } from "@/lib/theme";
 import "./globals.css";
-
-const sourceSans = Source_Sans_3({
-  subsets: ["latin"],
-  weight: "300",
-  variable: "--font-source",
-  display: "swap",
-});
 
 export const metadata: Metadata = {
   title: "hack-sain",
@@ -29,12 +21,18 @@ const schemeBoot = `try{if(localStorage.getItem("hack-sain-scheme")==="dark")doc
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" {...mantineHtmlProps} className={sourceSans.variable}>
+    <html lang="en" {...mantineHtmlProps}>
       <head>
         <ColorSchemeScript forceColorScheme="light" />
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Source+Sans+3:wght@300&display=swap"
+          rel="stylesheet"
+        />
         <script dangerouslySetInnerHTML={{ __html: schemeBoot }} />
       </head>
-      <body className={sourceSans.className}>
+      <body>
         <MantineProvider theme={theme} forceColorScheme="light">
           <header className="site-bar">
             <Brand size={32} priority />

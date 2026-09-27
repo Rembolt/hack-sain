@@ -1,0 +1,54 @@
+{
+  "visitId": "SER-1",
+  "accountId": "ACC-1",
+  "complaintId": "",
+  "contractor": {
+    "contractorId": "CON-4181",
+    "contractorName": "Calderfield Metering Services",
+    "engineerId": "EMP-20817",
+    "engineerName": "Dev Sharma"
+  },
+  "serviceAddress": {
+    "houseNumber": "12",
+    "street": "Harbour Street",
+    "city": "Toronto",
+    "province": "ON",
+    "postalCode": "M5V 2A1"
+  },
+  "region": "Ashford",
+  "appointment": {
+    "scheduledDate": "2024-11-12",
+    "visitDate": "2024-11-12",
+    "arrivalTime": "09:15",
+    "departureTime": "10:35"
+  },
+  "work": {
+    "workType": "Meter exchange",
+    "outcome": "Completed",
+    "systemId": "SYS-08",
+    "description": "Replaced the stuck water meter and took a closing read.",
+    "followUpRequired": false,
+    "followUpDate": null
+  },
+  "meterRead": {
+    "meterId": "MTR-40021785",
+    "readingType": "Actual",
+    "waterM3": 418.2,
+    "electricityKWh": 0
+  },
+  "charges": {
+    "labourHours": 1.5,
+    "labourCharge": 92,
+    "partsCharge": 64.5,
+    "totalCharge": 156.5,
+    "currency": "CAD"
+  },
+  "parts": [
+    {
+      "partCode": "PRT-2201",
+      "description": "15mm water meter, single jet",
+      "quantity": 1,
+      "unitCost": 64.5
+    }
+  ]
+}

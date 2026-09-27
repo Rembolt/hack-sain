@@ -7,9 +7,6 @@ import { apiUrl } from "@/lib/api-url";
 import type { Admin } from "@/lib/admin";
 import { formCatalog } from "@/lib/contract/record-form";
 import { formSlugs, isFormSlug, type FormSlug } from "@/lib/form-link";
-// --- DELETE AFTER TEST ---
-import { isTestUser } from "@/lib/test-user";
-// --- END DELETE AFTER TEST ---
 import { Brand } from "@/app/brand";
 import { FormGate } from "./form-gate";
 import classes from "./home.module.css";
@@ -183,15 +180,7 @@ export function AdminDesk({ admin, openForm = false }: { admin: Admin; openForm?
           <button
             type="button"
             className={classes.option}
-            onClick={() => {
-              // --- DELETE AFTER TEST: skip the form login popup ---
-              if (isTestUser(email)) {
-                router.push("/form");
-                return;
-              }
-              // --- END DELETE AFTER TEST ---
-              setWantGate(true);
-            }}
+            onClick={() => setWantGate(true)}
           >
             Create form
           </button>

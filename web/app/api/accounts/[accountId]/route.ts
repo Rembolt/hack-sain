@@ -1,14 +1,17 @@
-import { temporaryAccountPreview } from "@/lib/temporary-account-preview";
+import { unifiedFetch } from "@/lib/unified-client";
 
 export async function GET(
   _request: Request,
   context: { params: Promise<{ accountId: string }> },
 ) {
   const { accountId } = await context.params;
-  const account = temporaryAccountPreview(accountId);
-  if (!account) {
-    return Response.json({ message: "No account with that id." }, { status: 404 });
+  const response = await unifiedFetch(`/accounts/${encodeURIComponent(accountId)}`);
+  let body: unknown;
+  try {
+    body = await response.json();
+  } catch {
+    body = { message: "Unified database is not reachable." };
   }
 
-  return Response.json(account);
+  return Response.json(body, { status: response.status });
 }

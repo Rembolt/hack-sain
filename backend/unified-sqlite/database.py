@@ -1,8 +1,13 @@
+import os
+
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
 
-DATABASE_URL = "sqlite:///./unified.db"
+DATABASE_URL = os.environ.get(
+    "UNIFIED_DATABASE_URL",
+    "sqlite:///./unified.db",
+)
 
 engine = create_engine(
     DATABASE_URL,

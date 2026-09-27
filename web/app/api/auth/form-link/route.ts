@@ -11,7 +11,7 @@ export async function POST(request: Request) {
 
   const { email, form } = await stringFields(request, ["email", "form"]);
   const target = email.trim().toLowerCase();
-  if (!findAdmin(target)) {
+  if (!(await findAdmin(target))) {
     return Response.json({ message: "That email is not in the directory." }, { status: 404 });
   }
   if (!isFormSlug(form)) {

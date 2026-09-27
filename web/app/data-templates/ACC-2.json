@@ -1,0 +1,47 @@
+{
+  "accountId": "ACC-2",
+  "accountName": "Northflow Residence Two",
+  "clientInfo": {
+    "customerName": "Northflow Residence Two",
+    "email": "acc2@northflow.ca",
+    "phoneNumber": "+1-555-987-6543",
+    "serviceAddress": {
+      "houseNumber": "48",
+      "street": "Oak Street",
+      "city": "Mississauga",
+      "province": "ON",
+      "postalCode": "L5B 1M1"
+    },
+    "accountStatus": "ACTIVE"
+  },
+  "resources": {
+    "billing": [
+      {
+        "billingId": "BILL-000002",
+        "billingPeriod": { "startDate": "2024-09-01", "endDate": "2024-09-30" },
+        "usage": { "waterM3": 10.2, "electricityKWh": 510 },
+        "priceBreakdown": {
+          "waterCharge": 22,
+          "electricityCharge": 71.5,
+          "serviceFee": 15,
+          "adjustments": -5,
+          "tax": 13.46
+        },
+        "totalPrice": 116.96,
+        "currency": "CAD",
+        "status": "Paid",
+        "issuedDate": "2024-10-02",
+        "dueDate": "2024-10-23",
+        "paymentDate": "2024-10-18"
+      }
+    ],
+    "complaints": []
+  },
+  "summary": {
+    "outstandingBalance": 0,
+    "totalBills": 1,
+    "unpaidBills": 0,
+    "totalComplaints": 0,
+    "openComplaints": 0
+  }
+}

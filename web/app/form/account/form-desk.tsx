@@ -144,7 +144,16 @@ export function FormDesk() {
       if (!response.ok) {
         const found = readIssues(payload);
         if (found && found.length > 0) setSent(found);
-        else setError("The account file was not accepted.");
+        else {
+          const message =
+            payload &&
+            typeof payload === "object" &&
+            "message" in payload &&
+            typeof payload.message === "string"
+              ? payload.message
+              : "The account file was not accepted.";
+          setError(message);
+        }
         return;
       }
 

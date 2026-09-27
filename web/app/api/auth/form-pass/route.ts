@@ -14,7 +14,7 @@ export async function POST(request: Request) {
     return Response.json({ message: "Sign in with the account you are using." }, { status: 403 });
   }
 
-  if (!checkPassword(admin.email, password)) {
+  if (!(await checkPassword(admin.email, password))) {
     return Response.json({ message: "Those credentials were not accepted." }, { status: 401 });
   }
 

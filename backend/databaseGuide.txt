@@ -1,9 +1,36 @@
-Start Both DB's by
+Three databases
+
+1. db-sqlite on port 8001
+   Mock complaints source.
+   GET /complaints returns one chunk of rows changed since the cursor.
+   Unified copies those chunks only on the nightly sync.
+
+2. db-postgres on port 8002
+   Mock billing source, Postgres in Docker.
+   Its API is unchanged. Unified calls GET /billing live when a
+   requested bill is not already stored, then saves that bill.
+
+3. unified-sqlite on port 8003
+   The app database. The web app reads and writes only this service.
+
+Start all three
     ./run-all.sh
-    (in terminal)
 
-Stop Both DB's by
+Stop
     ./stop-all.sh
-    (in terminal)
 
-can exit server by cntrl/cmd + c aswell
+Nightly copy from the SQLite mock
+    POST http://127.0.0.1:8003/sync/nightly
+    GET  http://127.0.0.1:8003/sync/nightly
+    The service also runs that copy every night at NIGHTLY_SYNC_TIME
+    (local time, default 02:00). Set NIGHTLY_SYNC_TIME=off to keep
+    the endpoint and skip the clock.
+
+The web app reaches unified at UNIFIED_API_URL
+(default http://127.0.0.1:8003).
+
+Admins
+    Set ADMIN_1_EMAIL, ADMIN_1_PASSWORD, ADMIN_1_NAME
+    and ADMIN_2_EMAIL, ADMIN_2_PASSWORD, ADMIN_2_NAME
+    before starting unified. Missing accounts are created once.
+    Passwords are not stored in source.

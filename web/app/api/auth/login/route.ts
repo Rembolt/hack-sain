@@ -5,7 +5,7 @@ import { startSession } from "@/lib/session";
 export async function POST(request: Request) {
   const { email, password } = await stringFields(request, ["email", "password"]);
 
-  const admin = checkPassword(email, password);
+  const admin = await checkPassword(email, password);
   if (!admin) {
     return Response.json({ message: "Those credentials were not accepted." }, { status: 401 });
   }

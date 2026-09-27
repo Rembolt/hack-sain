@@ -1,1 +1,5 @@
 node_modules/
+backend/unified-sqlite/.local-admins
+backend/.local-logs/
+.env
+.env.local

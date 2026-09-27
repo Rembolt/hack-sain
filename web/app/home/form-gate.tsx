@@ -1,12 +1,8 @@
 "use client";
 
 import { Alert, Button, PasswordInput, TextInput } from "@mantine/core";
-import { useRouter } from "next/navigation";
 import { useEffect, useState, type FormEvent } from "react";
 import { apiUrl } from "@/lib/api-url";
-// --- DELETE AFTER TEST ---
-import { isTestUser, TEST_USER } from "@/lib/test-user";
-// --- END DELETE AFTER TEST ---
 import login from "../account/login/login.module.css";
 import classes from "./home.module.css";
 
@@ -19,12 +15,8 @@ export function FormGate({
   email: string;
   onClose: () => void;
 }) {
-  const router = useRouter();
   const [givenEmail, setGivenEmail] = useState(email);
-  // --- DELETE AFTER TEST ---
-  const [password, setPassword] = useState(isTestUser(email) ? TEST_USER.password : "");
-  // --- END DELETE AFTER TEST ---
-  // const [password, setPassword] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 
@@ -57,7 +49,7 @@ export function FormGate({
         return;
       }
 
-      router.push("/form");
+      window.location.assign("/form");
     } catch {
       setError("Could not reach the sign-in service.");
     } finally {

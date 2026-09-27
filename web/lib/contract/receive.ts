@@ -1,6 +1,21 @@
+import { unifiedFetch } from "@/lib/unified-client";
 import { issuesFor, type ContractKind } from "./validate";
 
-/** Reads a posted record and answers with the schema errors, or with valid. */
+const unifiedPath: Record<ContractKind, string> = {
+  account: "/accounts",
+  complaint: "/complaints",
+  file: "/files",
+  "service-visit": "/service-visits",
+};
+
+function failureMessage(body: unknown) {
+  if (!body || typeof body !== "object") return "The record was not saved.";
+  if ("message" in body && typeof body.message === "string") return body.message;
+  if ("detail" in body && typeof body.detail === "string") return body.detail;
+  return "The record was not saved.";
+}
+
+/** Reads a posted record, checks the schema, and stores it in the unified database. */
 export async function receiveRecord(request: Request, kind: ContractKind) {
   let body: unknown;
   try {
@@ -15,6 +30,21 @@ export async function receiveRecord(request: Request, kind: ContractKind) {
   const errors = issuesFor(kind, body);
   if (errors.length > 0) {
     return Response.json({ errors }, { status: 400 });
+  }
+
+  const saved = await unifiedFetch(unifiedPath[kind], {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!saved.ok) {
+    let payload: unknown = null;
+    try {
+      payload = await saved.json();
+    } catch {
+      payload = null;
+    }
+    return Response.json({ message: failureMessage(payload) }, { status: saved.status });
   }
 
   return Response.json({ valid: true });

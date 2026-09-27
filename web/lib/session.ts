@@ -71,7 +71,7 @@ export async function endSession() {
 export async function readAdmin(): Promise<Admin | null> {
   const jar = await cookies();
   const ticket = open(jar.get(SESSION_COOKIE)?.value);
-  return ticket ? findAdmin(ticket.email) : null;
+  return ticket ? await findAdmin(ticket.email) : null;
 }
 
 export async function passForm(email: string) {

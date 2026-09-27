@@ -139,7 +139,16 @@ export function RecordDesk({ slug }: { slug: RecordSlug }) {
       if (!response.ok) {
         const found = readIssues(payload);
         if (found && found.length > 0) setSent(found);
-        else setError(`The ${form.title.toLowerCase()} was not accepted.`);
+        else {
+          const message =
+            payload &&
+            typeof payload === "object" &&
+            "message" in payload &&
+            typeof payload.message === "string"
+              ? payload.message
+              : `The ${form.title.toLowerCase()} was not accepted.`;
+          setError(message);
+        }
         return;
       }
 

@@ -5,21 +5,14 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { Brand } from "@/app/brand";
 import { apiUrl } from "@/lib/api-url";
-// --- DELETE AFTER TEST ---
-import { TEST_USER } from "@/lib/test-user";
-// --- END DELETE AFTER TEST ---
 import classes from "./login.module.css";
 
 const loginUrl = apiUrl("/auth/login");
 
 export function LoginForm() {
   const router = useRouter();
-  // --- DELETE AFTER TEST: prefilled so you can click Sign in ---
-  const [email, setEmail] = useState(TEST_USER.email);
-  const [password, setPassword] = useState(TEST_USER.password);
-  // --- END DELETE AFTER TEST ---
-  // const [email, setEmail] = useState("");
-  // const [password, setPassword] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
 

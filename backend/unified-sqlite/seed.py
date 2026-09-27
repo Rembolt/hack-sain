@@ -2,42 +2,12 @@ import json
 
 from database import SessionLocal
 from database import engine
-from security import hash_password
 
 import models
 
 models.Base.metadata.create_all(bind=engine)
 
 db = SessionLocal()
-
-admins = [
-    {
-        "username": "admin",
-        "password": "123456",
-        "is_admin": True
-    },
-]
-
-for admin in admins:
-
-    exists = db.query(
-        models.Authorization
-    ).filter(
-        models.Authorization.username ==
-        admin["username"]
-    ).first()
-
-    if not exists:
-
-        db.add(
-            models.Authorization(
-                username=admin["username"],
-                password_hash=hash_password(
-                    admin["password"]
-                ),
-                is_admin=admin["is_admin"]
-            )
-        )
 
 complaint_schema = {
     "complaintId": "",

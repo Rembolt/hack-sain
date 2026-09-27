@@ -1,0 +1,47 @@
+{
+  "accountId": "ACC-1",
+  "accountName": "Northflow Residence One",
+  "clientInfo": {
+    "customerName": "Northflow Residence One",
+    "email": "acc1@northflow.ca",
+    "phoneNumber": "+1-555-123-4567",
+    "serviceAddress": {
+      "houseNumber": "12",
+      "street": "Harbour Street",
+      "city": "Toronto",
+      "province": "ON",
+      "postalCode": "M5V 2A1"
+    },
+    "accountStatus": "ACTIVE"
+  },
+  "resources": {
+    "billing": [
+      {
+        "billingId": "BILL-000001",
+        "billingPeriod": { "startDate": "2024-10-01", "endDate": "2024-10-31" },
+        "usage": { "waterM3": 12.4, "electricityKWh": 640.5 },
+        "priceBreakdown": {
+          "waterCharge": 28.5,
+          "electricityCharge": 86.4,
+          "serviceFee": 15,
+          "adjustments": 0,
+          "tax": 16.92
+        },
+        "totalPrice": 146.82,
+        "currency": "CAD",
+        "status": "Unpaid",
+        "issuedDate": "2024-11-02",
+        "dueDate": "2024-11-23",
+        "paymentDate": null
+      }
+    ],
+    "complaints": []
+  },
+  "summary": {
+    "outstandingBalance": 146.82,
+    "totalBills": 1,
+    "unpaidBills": 1,
+    "totalComplaints": 0,
+    "openComplaints": 0
+  }
+}

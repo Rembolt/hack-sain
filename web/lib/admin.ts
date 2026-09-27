@@ -1,11 +1,8 @@
 /**
- * The admin directory. Held in memory for the demo, so a server restart puts
- * the seed admin back and drops any edits made in settings.
+ * Admin directory. Accounts live in the unified database.
+ * Passwords are checked there and are not kept in this process.
  */
-import { createHash, timingSafeEqual } from "node:crypto";
-// --- DELETE AFTER TEST ---
-import { TEST_USER } from "./test-user";
-// --- END DELETE AFTER TEST ---
+import { unifiedFetch } from "./unified-client";
 
 export type Admin = {
   name: string;
@@ -14,89 +11,66 @@ export type Admin = {
   phone: string;
 };
 
-type Entry = Admin & { passwordHash: string };
-
-function hash(password: string) {
-  return createHash("sha256").update(password).digest();
-}
-
-function seed() {
-  const email = (process.env.ADMIN_EMAIL ?? "admin@northwind.ca").toLowerCase();
-  const entry: Entry = {
-    name: process.env.ADMIN_NAME ?? "Admin",
+function asAdmin(body: unknown): Admin | null {
+  if (!body || typeof body !== "object") return null;
+  const record = body as Record<string, unknown>;
+  const email = typeof record.email === "string" ? record.email : "";
+  if (!email) return null;
+  return {
+    name: typeof record.name === "string" && record.name ? record.name : email,
     email,
-    title: "Service desk admin",
-    phone: "",
-    passwordHash: hash(process.env.ADMIN_PASSWORD ?? "northwind").toString("hex"),
+    title: typeof record.title === "string" ? record.title : "",
+    phone: typeof record.phone === "string" ? record.phone : "",
   };
-  const directory = new Map<string, Entry>([[email, entry]]);
+}
 
-  // --- DELETE AFTER TEST -------------------------------------------------
-  directory.set(TEST_USER.email, {
-    name: TEST_USER.name,
-    email: TEST_USER.email,
-    title: TEST_USER.title,
-    phone: TEST_USER.phone,
-    passwordHash: hash(TEST_USER.password).toString("hex"),
+export async function findAdmin(email: string): Promise<Admin | null> {
+  const response = await unifiedFetch(
+    `/authorization/${encodeURIComponent(email.trim().toLowerCase())}`,
+  );
+  if (!response.ok) return null;
+  try {
+    return asAdmin(await response.json());
+  } catch {
+    return null;
+  }
+}
+
+export async function checkPassword(email: string, password: string): Promise<Admin | null> {
+  const response = await unifiedFetch("/login", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ username: email.trim().toLowerCase(), password }),
   });
-  // --- END DELETE AFTER TEST ---------------------------------------------
-
-  return directory;
-}
-
-const store = globalThis as typeof globalThis & { hackSainAdmins?: Map<string, Entry> };
-const admins = (store.hackSainAdmins ??= seed());
-
-// --- DELETE AFTER TEST -------------------------------------------------
-if (!admins.has(TEST_USER.email)) {
-  admins.set(TEST_USER.email, {
-    name: TEST_USER.name,
-    email: TEST_USER.email,
-    title: TEST_USER.title,
-    phone: TEST_USER.phone,
-    passwordHash: hash(TEST_USER.password).toString("hex"),
-  });
-}
-// --- END DELETE AFTER TEST ---------------------------------------------
-
-function publicFields({ name, email, title, phone }: Entry): Admin {
-  return { name, email, title, phone };
-}
-
-export function findAdmin(email: string): Admin | null {
-  const entry = admins.get(email.trim().toLowerCase());
-  return entry ? publicFields(entry) : null;
-}
-
-export function checkPassword(email: string, password: string): Admin | null {
-  const entry = admins.get(email.trim().toLowerCase());
-  if (!entry) return null;
-
-  const held = Buffer.from(entry.passwordHash, "hex");
-  const given = hash(password);
-  if (held.length !== given.length || !timingSafeEqual(held, given)) return null;
-
-  return publicFields(entry);
+  if (!response.ok) return null;
+  try {
+    const body = (await response.json()) as { is_admin?: boolean };
+    if (body.is_admin !== true) return null;
+    return asAdmin(body);
+  } catch {
+    return null;
+  }
 }
 
 /** Applies a settings change. Renaming the email moves the directory entry. */
-export function saveAdmin(email: string, patch: Partial<Admin>): Admin | null {
-  const key = email.trim().toLowerCase();
-  const entry = admins.get(key);
-  if (!entry) return null;
-
-  const nextEmail = (patch.email ?? entry.email).trim().toLowerCase();
-  if (nextEmail !== key && admins.has(nextEmail)) return null;
-
-  const updated: Entry = {
-    ...entry,
-    name: patch.name?.trim() || entry.name,
-    title: patch.title?.trim() ?? entry.title,
-    phone: patch.phone?.trim() ?? entry.phone,
-    email: nextEmail,
-  };
-
-  admins.delete(key);
-  admins.set(nextEmail, updated);
-  return publicFields(updated);
+export async function saveAdmin(email: string, patch: Partial<Admin>): Promise<Admin | null> {
+  const response = await unifiedFetch(
+    `/authorization/${encodeURIComponent(email.trim().toLowerCase())}/profile`,
+    {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        name: patch.name ?? "",
+        email: patch.email ?? email,
+        title: patch.title ?? "",
+        phone: patch.phone ?? "",
+      }),
+    },
+  );
+  if (!response.ok) return null;
+  try {
+    return asAdmin(await response.json());
+  } catch {
+    return null;
+  }
 }

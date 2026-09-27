@@ -25,7 +25,7 @@ export async function PATCH(request: Request) {
     return Response.json({ message: "That email does not look right." }, { status: 400 });
   }
 
-  const saved = saveAdmin(admin.email, patch);
+  const saved = await saveAdmin(admin.email, patch);
   if (!saved) {
     return Response.json({ message: "That email is already in use." }, { status: 409 });
   }
