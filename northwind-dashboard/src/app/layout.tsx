@@ -13,8 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Complaint Performance | Northwind Utilities",
-  description: "Complaint operations dashboard for Northwind Utilities.",
+  title: "Northflow | Complaint Performance",
+  description: "Northflow complaint operations dashboard for Northwind Utilities.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

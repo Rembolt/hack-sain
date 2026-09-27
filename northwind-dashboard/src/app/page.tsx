@@ -26,8 +26,10 @@ type DashboardData = {
   openCount: number;
   averageSla: number | null;
   averageClose: number | null;
+  slaBreachCount: number;
   transferCount: number;
   reopenedCount: number;
+  informationOnlyCount: number;
   correctionTotal: number;
   categories: BreakdownItem[];
   regions: BreakdownItem[];
@@ -47,8 +49,10 @@ const requiredHeaders = [
   "source_system",
   "transferred_between_systems",
   "sla_days",
+  "sla_breach",
   "days_to_close",
   "reopened",
+  "resolvable_by_information_only",
   "resolution_action",
   "bill_correction_value",
 ];
@@ -92,8 +96,10 @@ const summarize = (rows: ComplaintRow[]): DashboardData => {
     openCount: rows.filter(isOpen).length,
     averageSla: averageFor(rows, "sla_days"),
     averageClose: averageFor(closedRows, "days_to_close"),
+    slaBreachCount: rows.filter((row) => numberFrom(row.sla_breach) === 1).length,
     transferCount: rows.filter((row) => numberFrom(row.transferred_between_systems) === 1).length,
-    reopenedCount: rows.filter((row) => isTrue(row.reopened)).length,
+    reopenedCount: rows.filter((row) => numberFrom(row.reopened) === 1).length,
+    informationOnlyCount: rows.filter((row) => numberFrom(row.resolvable_by_information_only) === 1).length,
     correctionTotal: rows.reduce((total, row) => total + (numberFrom(row.bill_correction_value) ?? 0), 0),
     categories: breakdown(rows, "category"),
     regions: breakdown(rows, "region"),
@@ -105,6 +111,7 @@ const summarize = (rows: ComplaintRow[]): DashboardData => {
 };
 
 const countFormat = new Intl.NumberFormat("en-CA");
+const percentageOfTotal = (count: number, total: number) => `${((count / total) * 100).toFixed(1)}%`;
 const moneyFormat = new Intl.NumberFormat("en-CA", {
   style: "currency",
   currency: "CAD",
@@ -114,12 +121,14 @@ const moneyFormat = new Intl.NumberFormat("en-CA", {
 function MetricCard({
   label,
   value,
+  valueAside,
   detail,
   icon: Icon,
   tone,
 }: {
   label: string;
   value: string;
+  valueAside?: string;
   detail: string;
   icon: typeof Activity;
   tone: string;
@@ -130,7 +139,12 @@ function MetricCard({
         <span className="metric-label">{label}</span>
         <span className={`metric-icon ${tone}`}><Icon size={17} strokeWidth={1.8} /></span>
       </div>
-      <strong className="metric-value">{value}</strong>
+      {valueAside ? (
+        <div className="metric-value-line">
+          <strong className="metric-value">{value}</strong>
+          <span className="metric-value-aside">{valueAside}</span>
+        </div>
+      ) : <strong className="metric-value">{value}</strong>}
       <span className="metric-detail">{detail}</span>
     </article>
   );
@@ -232,9 +246,9 @@ export default function Home() {
   return (
     <div className="app-shell">
       <aside className="sidebar">
-        <a className="brand" href="#overview" aria-label="Northwind overview">
+        <a className="brand" href="#overview" aria-label="Northflow overview">
           <span className="brand-mark"><span /></span>
-          <span className="brand-copy"><strong>northwind</strong><small>UTILITY SERVICES</small></span>
+          <span className="brand-copy"><strong>northflow</strong><small>COMPLAINT OPERATIONS</small></span>
         </a>
         <div className="workspace-label">SERVICE OPERATIONS</div>
         <nav className="side-nav" aria-label="Dashboard sections">
@@ -290,10 +304,10 @@ export default function Home() {
 
           <section className="metric-grid" aria-label="Complaint performance metrics">
             <MetricCard label="Complaints analyzed" value={data ? countFormat.format(data.total) : "—"} detail="Rows in uploaded file" icon={Headset} tone="mint" />
-            <MetricCard label="Open complaints" value={data ? countFormat.format(data.openCount) : "—"} detail="Blank close-days or open status" icon={Clock3} tone="coral" />
+            <MetricCard label="Open complaints" value={data ? countFormat.format(data.openCount) : "—"} valueAside={data ? `${((data.openCount / data.total) * 100).toFixed(1)}%` : undefined} detail="Of complaints analyzed · blank close-days or open status" icon={Clock3} tone="coral" />
             <MetricCard label="Avg. days to close" value={shown(data?.averageClose ?? null)} detail="Closed complaints only" icon={Activity} tone="gold" />
             <MetricCard label="Average SLA target" value={shown(data?.averageSla ?? null)} detail="Days allowed to resolve" icon={Clock3} tone="blue" />
-            <MetricCard label="Reopened" value={data ? countFormat.format(data.reopenedCount) : "—"} detail={data ? `${((data.reopenedCount / data.total) * 100).toFixed(1)}% of complaints` : "Complaints returned to queue"} icon={RotateCcw} tone="green" />
+            <MetricCard label="SLA breaches" value={data ? countFormat.format(data.slaBreachCount) : "—"} valueAside={data ? `${((data.slaBreachCount / data.total) * 100).toFixed(1)}%` : undefined} detail="Of complaints analyzed · sla_breach = 1" icon={ShieldAlert} tone="coral" />
             <MetricCard label="Bill correction value" value={data ? moneyFormat.format(data.correctionTotal) : "—"} detail="Recorded value in CSV · CAD" icon={Wallet} tone="green" />
           </section>
 
@@ -315,7 +329,35 @@ export default function Home() {
 
           <div className="secondary-grid">
             <BreakdownPanel title="Resolution action" eyebrow="CLOSING OUTCOMES" items={data?.actions ?? []} icon={RotateCcw} emptyText="Resolution counts appear when a CSV is loaded." />
-            <MetricCard label="Transferred between systems" value={data ? countFormat.format(data.transferCount) : "—"} detail="Complaints where transferred_between_systems = 1" icon={ArrowRight} tone="blue" />
+            <section className="panel handling-metrics">
+              <div className="panel-heading">
+                <div className="panel-title-wrap">
+                  <span className="panel-icon"><Layers3 size={17} strokeWidth={1.8} /></span>
+                  <div><p className="eyebrow">CASE HANDLING</p><h2>Routing & resolution flags</h2></div>
+                </div>
+                <span className="unit-label">COMPLAINTS</span>
+              </div>
+              <div className="handling-metric-list">
+                <div className="handling-metric-row">
+                  <span className="metric-icon blue"><ArrowRight size={16} /></span>
+                  <span className="handling-metric-label">Transferred between systems</span>
+                  <strong>{data ? countFormat.format(data.transferCount) : "—"}</strong>
+                  {data && <span className="handling-metric-percent">{percentageOfTotal(data.transferCount, data.total)}</span>}
+                </div>
+                <div className="handling-metric-row">
+                  <span className="metric-icon green"><RotateCcw size={16} /></span>
+                  <span className="handling-metric-label">Reopened complaints</span>
+                  <strong>{data ? countFormat.format(data.reopenedCount) : "—"}</strong>
+                  {data && <span className="handling-metric-percent">{percentageOfTotal(data.reopenedCount, data.total)}</span>}
+                </div>
+                <div className="handling-metric-row">
+                  <span className="metric-icon mint"><CircleHelp size={16} /></span>
+                  <span className="handling-metric-label">Information-only resolvable</span>
+                  <strong>{data ? countFormat.format(data.informationOnlyCount) : "—"}</strong>
+                  {data && <span className="handling-metric-percent">{percentageOfTotal(data.informationOnlyCount, data.total)}</span>}
+                </div>
+              </div>
+            </section>
             <BreakdownPanel title="By priority" eyebrow="CASE URGENCY" items={data?.priorities ?? []} icon={ShieldAlert} emptyText="Priority counts appear when a CSV is loaded." />
           </div>
 
