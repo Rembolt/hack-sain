@@ -33,6 +33,8 @@ type DashboardData = {
   transferCount: number;
   reopenedCount: number;
   informationOnlyCount: number;
+  billCorrectionCount: number;
+  meterVisitCount: number;
   correctionTotal: number;
   categories: BreakdownItem[];
   regions: BreakdownItem[];
@@ -134,6 +136,8 @@ const summarize = (rows: ComplaintRow[]): DashboardData => {
     transferCount: rows.filter((row) => numberFrom(row.transferred_between_systems) === 1).length,
     reopenedCount: rows.filter((row) => numberFrom(row.reopened) === 1).length,
     informationOnlyCount: rows.filter((row) => numberFrom(row.resolvable_by_information_only) === 1).length,
+    billCorrectionCount: rows.filter((row) => row.resolution_action?.trim() === "Bill corrected and re-issued").length,
+    meterVisitCount: rows.filter((row) => row.resolution_action?.trim() === "Meter visit required").length,
     correctionTotal: rows.reduce((total, row) => total + (numberFrom(row.bill_correction_value) ?? 0), 0),
     categories: breakdown(rows, "category"),
     regions: breakdown(rows, "region"),
