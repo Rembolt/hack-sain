@@ -1,0 +1,25 @@
+{
+  "complaintId": "",
+  "ticketNumber": "",
+
+  "reason": "",
+  "category": "",
+  "description": "",
+
+  "priority": "",
+  "status": "",
+
+  "assignedTo": {
+    "employeeId": "",
+    "employeeName": ""
+  },
+
+  "createdDate": "",
+  "lastUpdatedDate": "",
+  "closedDate": null,
+
+  "resolution": {
+    "resolutionCode": "",
+    "resolutionDescription": ""
+  }
+}

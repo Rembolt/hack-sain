@@ -1,0 +1,29 @@
+{
+  "billingId": "",
+
+  "billingPeriod": {
+    "startDate": "",
+    "endDate": ""
+  },
+
+  "usage": {
+    "waterM3": 0.0,
+    "electricityKWh": 0.0
+  },
+
+  "priceBreakdown": {
+    "waterCharge": 0.0,
+    "electricityCharge": 0.0,
+    "serviceFee": 0.0,
+    "adjustments": 0.0,
+    "tax": 0.0
+  },
+
+  "totalPrice": 0.0,
+  "currency": "",
+  "status": "",
+
+  "issuedDate": "",
+  "dueDate": "",
+  "paymentDate": null
+}

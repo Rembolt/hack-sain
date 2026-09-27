@@ -1,0 +1,33 @@
+{
+  "accountId": "",
+  "accountName": "",
+
+  "clientInfo": {
+    "customerName": "",
+    "email": "",
+    "phoneNumber": "",
+
+    "serviceAddress": {
+      "houseNumber": "",
+      "street": "",
+      "city": "",
+      "province": "",
+      "postalCode": ""
+    },
+
+    "accountStatus": ""
+  },
+
+  "resources": {
+    "billing": [],
+    "complaints": []
+  },
+
+  "summary": {
+    "outstandingBalance": 0.0,
+    "totalBills": 0,
+    "unpaidBills": 0,
+    "totalComplaints": 0,
+    "openComplaints": 0
+  }
+}
