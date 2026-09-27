@@ -302,48 +302,6 @@ function MonthlyLineChart({
   );
 }
 
-function MonthlyTrendPanel({
-  title,
-  eyebrow,
-  rows,
-  field,
-  maxValue,
-  unit,
-  formatValue,
-}: {
-  title: string;
-  eyebrow: string;
-  rows: MonthlyKpiRow[];
-  field: string;
-  maxValue: number;
-  unit: string;
-  formatValue: (value: number) => string;
-}) {
-  return (
-    <section className="panel monthly-trend-panel">
-      <div className="panel-heading">
-        <div className="panel-title-wrap">
-          <span className="panel-icon"><TrendingUp size={17} strokeWidth={1.8} /></span>
-          <div><p className="eyebrow">{eyebrow}</p><h2>{title}</h2></div>
-        </div>
-        <span className="unit-label">{unit}</span>
-      </div>
-      <div className="trend-list">
-        {rows.map((row) => {
-          const value = numberFrom(row[field]) ?? 0;
-          return (
-            <div className="trend-row" key={row.month}>
-              <span>{row.month}</span>
-              <div className="trend-track"><i style={{ width: `${Math.min((value / maxValue) * 100, 100)}%` }} /></div>
-              <strong>{formatValue(value)}</strong>
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
-}
-
 export default function Home() {
   const inputRef = useRef<HTMLInputElement>(null);
   const monthlyInputRef = useRef<HTMLInputElement>(null);
@@ -581,9 +539,10 @@ export default function Home() {
             {monthlyData ? (
               <>
                 <div className="monthly-chart-grid monthly-trend-grid">
+                  <MonthlyLineChart rows={monthlyData.rows} title="Cost to serve per account" eyebrow="COST PRESSURE" field="cost_to_serve_per_account" yAxisTitle="CAD/account" formatValue={(value) => moneyFormat.format(value)} />
+                  <MonthlyLineChart rows={monthlyData.rows} title="Regulator satisfaction" eyebrow="REGULATORY SIGNAL" field="regulator_satisfaction_score_of_5" yAxisTitle="score / 5" axisMax={5} formatValue={(value) => value.toFixed(1)} formatAxisValue={(value) => value.toFixed(1)} />
                   <MonthlyLineChart rows={monthlyData.rows} title="Average time to close" eyebrow="RESOLUTION SPEED" field="avg_days_to_close" yAxisTitle="days" formatValue={(value) => value.toFixed(1)} />
                   <MonthlyLineChart rows={monthlyData.rows} title="First-contact resolution" eyebrow="CUSTOMER OUTCOME" field="first_contact_resolution_rate" yAxisTitle="%" axisMax={1} formatValue={(value) => `${(value * 100).toFixed(0)}%`} formatAxisValue={(value) => `${(value * 100).toFixed(0)}%`} />
-                  <MonthlyTrendPanel title="Regulator satisfaction" eyebrow="REGULATORY SIGNAL" rows={monthlyData.rows} field="regulator_satisfaction_score_of_5" maxValue={5} unit="OUT OF 5" formatValue={(value) => value.toFixed(1)} />
                 </div>
               </>
             ) : <div className="chart-empty monthly-empty">Upload `northwind_monthly_kpis.csv` to see monthly volume and performance trends.</div>}
