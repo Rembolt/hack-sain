@@ -113,25 +113,27 @@ cost_to_serve_per_account
 regulator_satisfaction_score_of_5
 ```
 
-The current monthly view intentionally does not display opened and closed complaint totals because those measures are already covered in the main complaint dashboard. The monthly view currently displays:
+The monthly view intentionally does not display opened and closed complaint totals because those measures are already covered in the main complaint dashboard. It currently displays:
 
-- Average time to close by month as a line chart, with days on the y-axis.
-- First-contact resolution by month as a line chart, with percentage on the y-axis.
-- Regulator satisfaction as a trend panel on a 0 to 5 scale.
-- Latest regulator satisfaction score.
-- Latest cost to serve per account in CAD.
+- **Cost to serve per account** by month as a line chart, with CAD/account on the y-axis.
+- **Regulator satisfaction** by month as a line chart, with a score out of 5 on the y-axis.
+- **Average time to close** by month as a line chart, with days on the y-axis.
+- **First-contact resolution** by month as a line chart, with percentage on the y-axis.
+- Latest regulator satisfaction score and latest cost to serve per account cards.
 
 Monthly rows are sorted by the `YYYY-MM` value in `month`. The rate field is expected as a decimal, so `0.62` displays as `62%`.
 
 ## Project Structure
 
 ```text
-northwind-dashboard/
-  src/app/page.tsx       Dashboard UI and browser-side CSV calculations
-  src/app/globals.css    Dashboard styles and responsive layouts
-  src/app/layout.tsx     Page metadata and global layout
-  public/                Static assets
-  package.json           Scripts and dependencies
+hack-sain/
+  README-Dashboard.md
+  northwind-dashboard/
+    src/app/page.tsx       Dashboard UI and browser-side CSV calculations
+    src/app/globals.css    Dashboard styles and responsive layouts
+    src/app/layout.tsx     Page metadata and global layout
+    public/                Static assets
+    package.json           Scripts and dependencies
 ```
 
 ## Notes
